@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="130dp"
+    android:layout_marginBottom="7dp"
+    android:layout_marginLeft="7dp"
+    android:layout_marginRight="7dp"
+    android:background="@drawable/fav_background_shape"
+    android:padding="15dp"
+    >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_weight="2"
+        android:paddingEnd="9dp"
+        android:paddingRight="9dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Code1"
+            android:textStyle="bold"
+            android:layout_gravity="start"
+            android:layout_marginTop="15dp"
+            android:id="@+id/codeFavTv"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginBottom="5dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Description and stuff and more and more and more"
+            android:layout_gravity="start"
+            android:id="@+id/descFavTv"
+            android:textSize="12sp"
+            android:ellipsize="end"
+            android:maxLines="3"
+            />
+    </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="205dp"
+        android:layout_height="wrap_content">
+
+
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/defaut_img"
+            android:id="@+id/favImageView2"
+            android:scaleType="centerCrop"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true" />
+
+
+
+
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/defaut_img"
+            android:id="@+id/favImageView1"
+            android:scaleType="centerCrop"
+            android:contentDescription="image1"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:background="#7f333333"
+            android:id="@+id/view5"
+            android:orientation="vertical"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/textIcons"
+                android:text="12 more"
+                android:layout_gravity="center"
+                android:paddingTop="5dp"
+                android:id="@+id/favMoreTv"/>
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</LinearLayout>

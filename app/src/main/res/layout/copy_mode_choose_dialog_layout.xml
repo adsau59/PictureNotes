@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:id="@+id/radioGroup"
+    android:paddingLeft="30dp"
+    android:paddingTop="10dp"
+    >
+
+    <RadioButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/radio0"
+        android:text="@string/don_t_do_anything"
+        android:textColor="@color/primaryText"/>
+
+    <RadioButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/radio1"
+        android:text="@string/copy_the_images"
+        android:textColor="@color/primaryText"/>
+
+    <RadioButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/radio2"
+        android:text="@string/move_the_images"
+        android:textColor="@color/primaryText"/>
+
+</RadioGroup>

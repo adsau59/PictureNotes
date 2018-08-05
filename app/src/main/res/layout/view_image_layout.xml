@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#dc000000"/>
+
+    <com.zoom.ZoomableImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:id="@+id/view_image"
+        android:src="@drawable/defaut_img" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#303030"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:id="@+id/botRelativeLayout"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="Image Name here stuff"
+            android:textColor="@color/textIcons"
+            android:textSize="20sp"
+            android:paddingLeft="15dp"
+            android:paddingStart="15dp"
+            android:paddingTop="5dp"
+            android:id="@+id/imageName"/>
+
+
+        <ImageView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@android:drawable/ic_menu_edit"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:id="@+id/editNameButton"
+
+            android:layout_marginTop="5dp"
+            android:layout_marginRight="15dp"
+            android:layout_marginEnd="15dp"/>
+
+
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:background="#303030"
+        android:layout_alignParentTop="true"
+        android:paddingTop="30dp"
+        android:paddingBottom="5dp"
+        android:id="@+id/topRelativeLayout"
+       >
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:id="@+id/closeImageView"
+            android:layout_marginLeft="10dp"
+            android:padding="8dp"/>
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@android:drawable/ic_menu_share"
+            android:id="@+id/shareImageView"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+
+            android:layout_marginRight="20dp"
+            android:padding="5dp"
+            />
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@android:drawable/ic_menu_rotate"
+
+            android:id="@+id/rotateImageView"
+
+            android:layout_alignParentTop="true"
+            android:layout_toLeftOf="@+id/shareImageView"
+            android:layout_toStartOf="@+id/shareImageView"
+            android:layout_marginRight="20dp"
+            android:padding="5dp"
+            />
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@android:drawable/ic_menu_delete"
+
+            android:id="@+id/deleteImageView"
+
+            android:layout_alignParentTop="true"
+            android:layout_toLeftOf="@+id/rotateImageView"
+            android:layout_toStartOf="@+id/rotateImageView"
+            android:layout_marginRight="20dp"
+            android:padding="5dp"
+            />
+
+
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:id="@+id/loadingPanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminate="true" />
+    </RelativeLayout>
+
+
+</RelativeLayout>

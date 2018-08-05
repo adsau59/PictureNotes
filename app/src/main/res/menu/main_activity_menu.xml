@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/importNote"
+        android:icon="@android:drawable/ic_input_get"
+        android:title="Import"
+        app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/viewAllNotes"
+        android:icon="@android:drawable/ic_menu_view"
+        android:title="View All Notes"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/setttings"
+        android:icon="@android:drawable/ic_dialog_info"
+        android:title="Settings"
+        app:showAsAction="never"/>
+
+</menu>
