@@ -21,7 +21,7 @@ Picture Notes, a gallery app made especially for your notes.
 
 ### Play Store
 
-You can download the app from play store [here](https://play.google.com/store/apps/details?id=in.definex.picturenotes)
+You can download the app from play store [here](https://play.google.com/store/apps/details?id=in.definex.picturenotes) or [download the apk](https://drive.google.com/uc?export=download&id=1lU840dz4MLz1gScrWwpwxkfnb63Bb2Hj)
 
 ### Technology Stack
 
