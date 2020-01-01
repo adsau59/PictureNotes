@@ -23,8 +23,6 @@ import android.widget.Toast;
 
 import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.github.amlcurran.showcaseview.targets.ViewTarget;
-import com.sangcomz.fishbun.FishBun;
-import com.sangcomz.fishbun.define.Define;
 
 import java.io.File;
 import java.net.URI;
