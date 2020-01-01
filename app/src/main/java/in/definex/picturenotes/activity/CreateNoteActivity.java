@@ -2,10 +2,14 @@ package in.definex.picturenotes.activity;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -23,6 +27,8 @@ import com.sangcomz.fishbun.FishBun;
 import com.sangcomz.fishbun.define.Define;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 
 import in.definex.picturenotes.models.ImageData;
@@ -134,8 +140,14 @@ public class CreateNoteActivity extends AppCompatActivity {
     }
 
     String code;
+    public final static int GALLERY_CODE = 129;
 
-    //NOTEME if next clicked
+    /**
+     * Executed when next is clicked,
+     * does form validation, then opens image selection
+     * @param item R.id.action_next
+     * @return false if form is incorrect
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if(item.getItemId() == R.id.action_next){
@@ -143,22 +155,26 @@ public class CreateNoteActivity extends AppCompatActivity {
             if(sv!=null)
                 sv.hide();
 
-            EditText codeEt = ((EditText)findViewById(R.id.codeEditText));
-            //get from edittext
+            //form validation starts
 
+            //get from edittext
+            EditText codeEt = ((EditText)findViewById(R.id.codeEditText));
             code = codeEt.getText().toString().toLowerCase().trim();
             final String dsc = ((EditText)findViewById(R.id.descriptionEditText)).getText().toString();
 
+            //if code not entered
             if(code.isEmpty()){
                 Toast.makeText(this, R.string.enter_code_to_create_a_note, Toast.LENGTH_LONG).show();
                 return false;
             }
 
+            //code too long
             if(code.length()> DEFINE.CODE_CHAR_LIMIT){
                 Toast.makeText(this, R.string.the_name_is_too_long, Toast.LENGTH_LONG).show();
                 return false;
             }
 
+            //description too long
             if(dsc.length()>DEFINE.DESC_CHAR_LIMIT){
                 Toast.makeText(this, R.string.the_desc_is_too_long, Toast.LENGTH_LONG).show();
                 return false;
@@ -187,14 +203,15 @@ public class CreateNoteActivity extends AppCompatActivity {
                 return true;
             }
 
-            //else
-            //new NoteModel(code, dsc, false).saveNoteInDB(this);
+            //form validation ends
+
+            //create new note and start image selection using fish buns
             noteModel = new NoteModel(code,dsc,false);
-            FishBun.BaseProperty baseProperty = FishBun.with(CreateNoteActivity.this);
-            baseProperty.setActionBarColor(ContextCompat.getColor(this, R.color.colorPrimary), ContextCompat.getColor(this, R.color.colorPrimaryDark))
-                    .setCamera(true)
-                    .setButtonInAlbumActivity(true)
-                    .startAlbum();
+            Intent intent = new Intent();
+            intent.setType("image/*");
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            intent.setAction(Intent.ACTION_GET_CONTENT);
+            startActivityForResult(Intent.createChooser(intent,getResources().getString(R.string.select_images)), GALLERY_CODE);
 
             return true;
         }
@@ -203,14 +220,26 @@ public class CreateNoteActivity extends AppCompatActivity {
 
     NoteModel noteModel;
 
+    /**
+     * Executed after returned from image selection
+     * @param requestCode Define.ALBUM_REQUEST_CODE
+     * @param resultCode RESULT_OK if success
+     * @param intent `data.getStringArrayListExtra(Define.INTENT_PATH)` gets list of images
+     */
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
         switch (requestCode) {
-            case Define.ALBUM_REQUEST_CODE:
-                if (resultCode == RESULT_OK) {
+            case GALLERY_CODE:
+                if (resultCode == Activity.RESULT_OK) {
+
                     noteModel.saveNoteInDB(this);
-                    final ArrayList<String> paths = data.getStringArrayListExtra(Define.INTENT_PATH);
+
+                    final ClipData data = intent.getClipData();
+
+                    if(data == null)
+                        return;
+
                     final Context context = this;
                     final ProgressDialog progressDialog = new ProgressDialog(this);
                     progressDialog.setTitle(R.string.loading_please_wait);
@@ -220,33 +249,37 @@ public class CreateNoteActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             int lastImageNumber = 0;
-                            for (String path : paths) {
+
+                            for (int i = 0; i < data.getItemCount(); i++) {
+
+                                String path = getImageFilePath(data.getItemAt(i).getUri());
                                 lastImageNumber++;
 
-                                switch (UtilityFunctions.getCopyMode(context)){
+                                switch (UtilityFunctions.getCopyMode(context)) {
                                     case NONE:
                                         break;
 
                                     case COPY:
-                                        String outputPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/PictureNotes/local/"+code+"/";
-                                        String outputFile = outputPath+new File(path).getName();
+                                        String outputPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/PictureNotes/local/" + code + "/";
+                                        String outputFile = outputPath + new File(path).getName();
                                         UtilityFunctions.copyFile(path, outputFile);
                                         path = outputFile;
                                         break;
 
                                     case MOVE:
-                                        String outputPath1 = Environment.getExternalStorageDirectory().getAbsolutePath() + "/PictureNotes/local/"+code+"/";
-                                        String outputFile1 = outputPath1+new File(path).getName();
+                                        String outputPath1 = Environment.getExternalStorageDirectory().getAbsolutePath() + "/PictureNotes/local/" + code + "/";
+                                        String outputFile1 = outputPath1 + new File(path).getName();
                                         UtilityFunctions.copyFile(path, outputFile1);
 
                                         UtilityFunctions.deleteImage(context, path);
 
                                         path = outputFile1;
                                         break;
-
                                 }
 
                                 new ImageData(lastImageNumber, path).saveImageDataToDB(context, code);
+
+
                             }
                             runOnUiThread(new Runnable() {
                                 @Override
@@ -269,6 +302,26 @@ public class CreateNoteActivity extends AppCompatActivity {
         intent.putExtra("code",code);
         finish();
         startActivity(intent);
+    }
+
+    public String getImageFilePath(Uri uri) {
+        String path = null, image_id = null;
+
+        Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+        if (cursor != null) {
+            cursor.moveToFirst();
+            image_id = cursor.getString(0);
+            image_id = image_id.substring(image_id.lastIndexOf(":") + 1);
+            cursor.close();
+        }
+
+        cursor = getContentResolver().query(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", new String[]{image_id}, null);
+        if (cursor!=null) {
+            cursor.moveToFirst();
+            path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+            cursor.close();
+        }
+        return path;
     }
 
 

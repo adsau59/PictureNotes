@@ -6,8 +6,8 @@ android {
 
     defaultConfig {
         applicationId "in.definex.picturenotes"
-        minSdkVersion 15
-        targetSdkVersion 25
+        minSdkVersion 22
+        targetSdkVersion 22
         versionCode 10
         versionName "1.1.36-beta"
     }
