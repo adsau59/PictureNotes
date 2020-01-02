@@ -11,4 +11,6 @@ public class DEFINE {
 
     public final static int NOTE_IMAGE_LIMIT = 30;
 
+    public final static int GALLERY_CODE = 129;
+
 }

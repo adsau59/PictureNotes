@@ -57,8 +57,6 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.drive.model.FileList;
 import com.google.api.services.drive.model.Permission;
-import com.sangcomz.fishbun.FishBun;
-import com.sangcomz.fishbun.define.Define;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -81,6 +79,7 @@ import in.definex.picturenotes.R;
 import in.definex.picturenotes.database.DbService;
 import in.definex.picturenotes.util.DEFINE;
 import in.definex.picturenotes.util.GooglePlayManager;
+import in.definex.picturenotes.util.ImageSelector;
 import in.definex.picturenotes.util.TextDrawable;
 import in.definex.picturenotes.util.UtilityFunctions;
 import pub.devrel.easypermissions.AfterPermissionGranted;
@@ -131,7 +130,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
 
         //setting views
-        updateCodeAndDescView();
+        update_code_and_desc_view();
 
         loadImageLvFromDb();
 
@@ -226,11 +225,6 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
         //edit description
         ImageView editDescIv = (ImageView)findViewById(R.id.editDesc);
         editDescIv.setImageDrawable(UtilityFunctions.makeIcon(context, "\uf044",30, Color.BLACK));
-
-
-
-
-
         editDescIv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -286,7 +280,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                                     noteModel = noteModel.changeCodeAndSaveToDB(context, newCode);
 
                                 code = noteModel.getCode();
-                                updateCodeAndDescView();
+                                update_code_and_desc_view();
 
                                 UtilityFunctions.setFavDisturbed(context, true);
                                 dialog.dismiss();
@@ -301,14 +295,12 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
             }
         });
-
     }
 
-    public void updateCodeAndDescView(){
+    private void update_code_and_desc_view(){
         ((TextView)findViewById(R.id.codeTextView)).setText(noteModel.getCode());
         ((TextView)findViewById(R.id.descriptionTextView)).setText(noteModel.getDescription());
     }
-
 
     ShowcaseView sv;
     int tutCounter = 0;
@@ -322,6 +314,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recyclerview);
         adapter = new ShowImageRecyclerAdapter(this, imageDatas, noteModel);
+
         adapter.setActivityFuncs(new ShowImageRecyclerAdapter.ActivityFuncs() {
             @Override
             public void hideStatus() {
@@ -344,6 +337,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                 decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
             }
         });
+
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new GridLayoutManager(this,2));
 
@@ -427,75 +421,30 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
         ith.attachToRecyclerView(recyclerView);
     }
 
-    //NOTEME result from imageSelection
+    /**
+     * Handles the request from image selection
+     *
+     * @param requestCode DEFINE.GALLERY_CODE for image selection
+     * @param resultCode Activity.RESULT_OK if activity was successful
+     * @param data intent result
+     */
     protected void onActivityResult(int requestCode, int resultCode,
                                     Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        switch (requestCode) {
-            case Define.ALBUM_REQUEST_CODE:
-                if (resultCode == RESULT_OK) {
-                    final ArrayList<String> paths = data.getStringArrayListExtra(Define.INTENT_PATH);
-
-                    //NOTEME MAX LIMIT OF NOTES
-                    if(lastImageNumber+paths.size()>DEFINE.NOTE_IMAGE_LIMIT){
-                        Toast.makeText(this, R.string.cant_exceed_maximum_limit_of_30_images, Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-
-                    final Context context = this;
-
-                    new Thread(){
-                        @Override
-                        public void run() {
-                            for (String path : paths) {
-                                lastImageNumber++;
-
-                                switch (UtilityFunctions.getCopyMode(context)){
-                                    case NONE:
-                                        break;
-
-                                    case COPY:
-                                        String outputPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/PictureNotes/local/"+code+"/";
-                                        String outputFile = outputPath+new File(path).getName();
-                                        UtilityFunctions.copyFile(path, outputFile);
-                                        path = outputFile;
-                                        break;
-
-                                    case MOVE:
-                                        String outputPath1 = Environment.getExternalStorageDirectory().getAbsolutePath() + "/PictureNotes/local/"+code+"/";
-                                        String outputFile1 = outputPath1+new File(path).getName();
-                                        UtilityFunctions.copyFile(path, outputFile1);
-
-                                        UtilityFunctions.deleteImage(context, path);
-
-                                        path = outputFile1;
-                                        break;
-
-                                }
-
-                                new ImageData(lastImageNumber, path).saveImageDataToDB(context, code);
-                                noteModel.cachedShareNoteDisturbed(context);
-                                UtilityFunctions.setFavDisturbed(context, true);
-                                final List<ImageData> imageDatas = ImageData.getImagesFromCode(context,code);
-
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        adapter.updateListData(imageDatas);
-                                    }
-                                });
-
-                            }
-                        }
-                    }.start();
-
-                }
-                break;
-
-        }
-
         gpm.manageResults(requestCode,resultCode,data);
+
+        if(requestCode != DEFINE.GALLERY_CODE && resultCode != Activity.RESULT_OK)
+            return;
+
+        imageSelector.HandleCallback(data, (o)->{
+            noteModel.cachedShareNoteDisturbed(this);
+            UtilityFunctions.setFavDisturbed(this, true);
+
+            List<ImageData> imageDatas = ImageData.getImagesFromCode(this,code);
+            adapter.updateListData(imageDatas);
+            return null;
+        });
+
     }
 
     private void changeFavIcon(boolean fav){
@@ -583,22 +532,23 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
     }
 
+    private ImageSelector imageSelector;
 
-    private void setFabMode(Boolean deletMode){
-        if(!deletMode){
+    /**
+     * Changes the mode of action button
+     * changes icon, color and callback
+     *
+     * on delete mode, it starts the delete operation
+     * on non delete mode, it adds new images
+     *
+     * @param deleteMode true if on delete mode
+     */
+    private void setFabMode(Boolean deleteMode){
+        if(!deleteMode){
             fab.setImageDrawable(UtilityFunctions.makeIcon(this, "\uF067"));
             fab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorAccent)));
-            final Context context = this;
-            fab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    FishBun.BaseProperty baseProperty = FishBun.with(ShowImageActivity.this);
-                    baseProperty.setActionBarColor(ContextCompat.getColor(context, R.color.colorPrimary), ContextCompat.getColor(context, R.color.colorPrimaryDark))
-                            .setCamera(true)
-                            .setButtonInAlbumActivity(true)
-                            .startAlbum();
-                }
-            });
+            imageSelector = new ImageSelector(this, code);
+            fab.setOnClickListener(view -> imageSelector.StartIntent());
         }else{
             //NOTEME DELETE SCRIPT
             fab.setImageDrawable(UtilityFunctions.makeIcon(this, "\uf1f8"));
