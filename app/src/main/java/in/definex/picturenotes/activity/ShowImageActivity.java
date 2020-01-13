@@ -309,8 +309,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
     ShowImageRecyclerAdapter adapter;
     //NOTEME load Image
     private void loadImageLvFromDb(){
-        //todo broke this, `getImagesFromCode` returns null for now
-        List<ImageData> imageDatas = ImageData.getImagesFromCode(this,code);
+        List<ImageData> imageDatas = NoteModel.getNoteByCode(this, code).getImageDatas();
         lastImageNumber = imageDatas.size() !=0 ?imageDatas.get(imageDatas.size()-1).getNumber():0;
 
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recyclerview);

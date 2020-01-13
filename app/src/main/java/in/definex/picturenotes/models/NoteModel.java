@@ -1,31 +1,47 @@
 package in.definex.picturenotes.models;
 
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.os.NetworkOnMainThreadException;
-import android.support.v7.app.NotificationCompat;
+
+import org.greenrobot.greendao.annotation.Entity;
+import org.greenrobot.greendao.annotation.Id;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import in.definex.picturenotes.activity.MainActivity;
 import in.definex.picturenotes.database.DbService;
-import in.definex.picturenotes.database.ImageDBHelper;
+
+import org.greenrobot.greendao.annotation.Generated;
+import org.greenrobot.greendao.annotation.ToMany;
+import org.greenrobot.greendao.DaoException;
 
 /**
  * Created by adam_ on 29-11-2016.
  */
 
+@Entity
 public class NoteModel {
 
+    @Id
     private int id;
+
     private String code;
     private String description;
     private boolean isFav;
     private String readonly;
     private String password;
+
+    @ToMany(referencedJoinProperty = "id")
+    private List<ImageData> imageDatas;
+
+    /** Used to resolve relations */
+    @Generated(hash = 2040040024)
+    private transient DaoSession daoSession;
+
+    /** Used for active entity operations. */
+    @Generated(hash = 826845092)
+    private transient NoteModelDao myDao;
 
     public NoteModel(String code, String description) {
         this(code, description, false, "", "");
@@ -46,6 +62,22 @@ public class NoteModel {
 
     public NoteModel(NoteModel n){
         this(n.code, n.description, n.isFav, n.readonly, n.password);
+    }
+
+
+    @Generated(hash = 33309656)
+    public NoteModel(int id, String code, String description, boolean isFav, String readonly, String password) {
+        this.id = id;
+        this.code = code;
+        this.description = description;
+        this.isFav = isFav;
+        this.readonly = readonly;
+        this.password = password;
+    }
+
+
+    @Generated(hash = 1532285157)
+    public NoteModel() {
     }
 
     public String getCode() {
@@ -72,194 +104,85 @@ public class NoteModel {
         this.code = code;
     }
 
+    public int getId() {
+        return this.id;
+    }
+
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+
+    public boolean getIsFav() {
+        return this.isFav;
+    }
+
+
+    public void setIsFav(boolean isFav) {
+        this.isFav = isFav;
+    }
+
+
+    public String getReadonly() {
+        return this.readonly;
+    }
+
+
+    public void setReadonly(String readonly) {
+        this.readonly = readonly;
+    }
+
+
+    public String getPassword() {
+        return this.password;
+    }
+
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
 
 
 
 
     public void updateFavStatusInDB(Context context, boolean fav){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getReadableDatabase();
-
-        ContentValues values = new ContentValues();
-        values.put(ImageDBHelper.NoteEntry.COLUMN_FAVOURITE, fav);
-
-        String selection = ImageDBHelper.NoteEntry.COLUMN_CODE + " = ?";
-        String[] selectionArgs = { code };
-
-        db.update(
-                ImageDBHelper.NoteEntry.TABLE_NAME,
-                values,
-                selection,
-                selectionArgs);
-
-        db.close();
+        this.isFav = fav;
+        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
+        daoSession.getNoteModelDao().update(this);
     }
 
     public void updateNoteDb(Context context){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getReadableDatabase();
-
-        ContentValues values = new ContentValues();
-        values.put(ImageDBHelper.NoteEntry.COLUMN_CODE, code);
-        values.put(ImageDBHelper.NoteEntry.COLUMN_DESCRIPTION, description);
-        values.put(ImageDBHelper.NoteEntry.COLUMN_FAVOURITE, isFav);
-
-        String selection = ImageDBHelper.NoteEntry.COLUMN_CODE + " = ?";
-        String[] selectionArgs = { code };
-
-        db.update(
-                ImageDBHelper.NoteEntry.TABLE_NAME,
-                values,
-                selection,
-                selectionArgs);
-
-        db.close();
+        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
+        daoSession.getNoteModelDao().update(this);
     }
 
     public static NoteModel getNoteByCode(Context context, String code){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getReadableDatabase();
 
-        String[] projection1 = {
-                ImageDBHelper.NoteEntry.COLUMN_CODE,
-                ImageDBHelper.NoteEntry.COLUMN_DESCRIPTION,
-                ImageDBHelper.NoteEntry.COLUMN_FAVOURITE
-        };
+        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
+        return daoSession.getNoteModelDao().queryBuilder().where(NoteModelDao.Properties.Code.eq(code)).build().unique();
 
-        String selection1 = ImageDBHelper.NoteEntry.COLUMN_CODE + " = ?";
-        String[] selectionArgs1 = {code};
-
-        Cursor c1 = db.query(
-                ImageDBHelper.NoteEntry.TABLE_NAME,
-                projection1,
-                selection1,
-                selectionArgs1,
-                null,
-                null,
-                null
-        );
-
-        if(!c1.moveToFirst()){
-            return null;
-        }
-
-        NoteModel noteModel = new NoteModel(
-                code,
-                c1.getString(c1.getColumnIndex(ImageDBHelper.NoteEntry.COLUMN_DESCRIPTION)),
-                c1.getInt(c1.getColumnIndex(ImageDBHelper.NoteEntry.COLUMN_FAVOURITE)) == 1
-        );
-        c1.close();
-        db.close();
-
-        return noteModel;
     }
 
     public void saveNoteInDB(Context context){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
-
-        values.put(ImageDBHelper.NoteEntry.COLUMN_CODE, code);
-        values.put(ImageDBHelper.NoteEntry.COLUMN_DESCRIPTION, description);
-        values.put(ImageDBHelper.NoteEntry.COLUMN_FAVOURITE, 0);
-        values.put(ImageDBHelper.NoteEntry.COLUMN_READONLY_PASSWORD,"");
-        values.put(ImageDBHelper.NoteEntry.COLUMN_PASSWORD,"");
-
-
-        db.insert(ImageDBHelper.NoteEntry.TABLE_NAME, null, values);
-
-        db.close();
+        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
+        daoSession.getNoteModelDao().save(this);
     }
 
     public static boolean isCodeInDB(Context context, String code){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getReadableDatabase();
-
-        String[] projection1 = {
-                ImageDBHelper.NoteEntry.COLUMN_CODE
-        };
-
-        String selection1 = ImageDBHelper.NoteEntry.COLUMN_CODE + " = ?";
-        String[] selectionArgs1 = {code};
-
-        Cursor c1 = db.query(
-                ImageDBHelper.NoteEntry.TABLE_NAME,
-                projection1,
-                selection1,
-                selectionArgs1,
-                null,
-                null,
-                null
-        );
-
-        boolean ans = c1.moveToFirst();
-        c1.close();
-
-        return ans;
+        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
+        return daoSession.getNoteModelDao().queryBuilder().where(NoteModelDao.Properties.Code.eq(code)).build().unique() != null;
     }
 
     public static List<NoteModel> getFavNotesFromDB(Context context){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getReadableDatabase();
-
-        String[] projection1 = {
-                ImageDBHelper.NoteEntry.COLUMN_CODE,
-                ImageDBHelper.NoteEntry.COLUMN_DESCRIPTION
-        };
-
-        String selection1 = ImageDBHelper.NoteEntry.COLUMN_FAVOURITE + " = ?";
-        String[] selectionArgs1 = {"1"};
-
-        Cursor c1 = db.query(
-                ImageDBHelper.NoteEntry.TABLE_NAME,
-                projection1,
-                selection1,
-                selectionArgs1,
-                null,
-                null,
-                null
-        );
-
-        List<NoteModel> noteModels = new ArrayList<>();
-
-        if(c1.moveToFirst()){
-            do {
-                noteModels.add(new NoteModel(
-                                c1.getString(c1.getColumnIndex(ImageDBHelper.NoteEntry.COLUMN_CODE)),
-                                c1.getString(c1.getColumnIndex(ImageDBHelper.NoteEntry.COLUMN_DESCRIPTION)),
-                                true
-                ));
-            }while (c1.moveToNext());
-
-        }
-        c1.close();
-
-        db.close();
-
-        return noteModels;
+        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
+        return daoSession.getNoteModelDao().queryBuilder().where(NoteModelDao.Properties.IsFav.eq(true)).build().list();
     }
+
     public static List<NoteModel> getAllNotes(Context context){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getReadableDatabase();
-
-        Cursor c1 = db.rawQuery("SELECT * FROM "+ ImageDBHelper.NoteEntry.TABLE_NAME, null);
-
-        List<NoteModel> noteModels = new ArrayList<>();
-
-        if(c1.moveToFirst()){
-            do {
-                noteModels.add(new NoteModel(
-                                c1.getString(c1.getColumnIndex(ImageDBHelper.NoteEntry.COLUMN_CODE)),
-                                c1.getString(c1.getColumnIndex(ImageDBHelper.NoteEntry.COLUMN_DESCRIPTION)),
-                                true
-                ));
-            }while (c1.moveToNext());
-
-        }
-        c1.close();
-        db.close();
-
-        return noteModels;
+        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
+        return daoSession.getNoteModelDao().loadAll();
     }
 
     public void cacheSharedNote(Context context,String fileId){
@@ -284,48 +207,113 @@ public class NoteModel {
     }
 
     public static String[] getAllCodes(Context context){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getReadableDatabase();
 
-        Cursor c1 = db.rawQuery("SELECT "+ ImageDBHelper.NoteEntry.COLUMN_CODE+" FROM "+ ImageDBHelper.NoteEntry.TABLE_NAME, null);
+        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
+        List<NoteModel> notes = daoSession.getNoteModelDao().loadAll();
 
         List<String> codes = new ArrayList<>();
+        for(NoteModel n: notes)
+            codes.add(n.code);
 
-        if(c1.moveToFirst()){
-            do {
-                codes.add(c1.getString(c1.getColumnIndex(ImageDBHelper.NoteEntry.COLUMN_CODE)));
-            }while (c1.moveToNext());
-
-        }
-        c1.close();
-        db.close();
-
-        return codes.toArray(new String[codes.size()]);
+        return codes.toArray(new String[0]);
     }
 
 
     public void deleteNoteAndImagesFromDB(Context c){
+        DaoSession daoSession = ((MainActivity) c.getApplicationContext()).getDaoSession();
 
         //delete images
-        DbService.deleteAllImageWithCode(c, code);
+        for(ImageData i: imageDatas)
+            daoSession.getImageDataDao().delete(i);
+
         //delete note
-        DbService.deleteNoteWithCode(c, code);
+        daoSession.getNoteModelDao().delete(this);
     }
 
     public NoteModel changeCodeAndSaveToDB(Context context, String newCode){
-        List<ImageData> list = ImageData.getImagesFromCode(context,code);
-        for(ImageData data: list)
-            //todo broke this, `changeCode` does nothing for now
-            data.changeCode(context, newCode);
-
-        NoteModel noteModel = new NoteModel(this);
-        noteModel.code = newCode;
-
-        DbService.deleteNoteWithCode(context, code);
-
-        noteModel.saveNoteInDB(context);
-
-        return noteModel;
+        this.code = newCode;
+        updateNoteDb(context);
+        return this;
     }
+
+
+    /**
+     * To-many relationship, resolved on first access (and after reset).
+     * Changes to to-many relations are not persisted, make changes to the target entity.
+     */
+    @Generated(hash = 834232635)
+    public List<ImageData> getImageDatas() {
+        if (imageDatas == null) {
+            final DaoSession daoSession = this.daoSession;
+            if (daoSession == null) {
+                throw new DaoException("Entity is detached from DAO context");
+            }
+            ImageDataDao targetDao = daoSession.getImageDataDao();
+            List<ImageData> imageDatasNew = targetDao._queryNoteModel_ImageDatas(id);
+            synchronized (this) {
+                if (imageDatas == null) {
+                    imageDatas = imageDatasNew;
+                }
+            }
+        }
+        return imageDatas;
+    }
+
+
+    /** Resets a to-many relationship, making the next get call to query for a fresh result. */
+    @Generated(hash = 1458652996)
+    public synchronized void resetImageDatas() {
+        imageDatas = null;
+    }
+
+
+    /**
+     * Convenient call for {@link org.greenrobot.greendao.AbstractDao#delete(Object)}.
+     * Entity must attached to an entity context.
+     */
+    @Generated(hash = 128553479)
+    public void delete() {
+        if (myDao == null) {
+            throw new DaoException("Entity is detached from DAO context");
+        }
+        myDao.delete(this);
+    }
+
+
+    /**
+     * Convenient call for {@link org.greenrobot.greendao.AbstractDao#refresh(Object)}.
+     * Entity must attached to an entity context.
+     */
+    @Generated(hash = 1942392019)
+    public void refresh() {
+        if (myDao == null) {
+            throw new DaoException("Entity is detached from DAO context");
+        }
+        myDao.refresh(this);
+    }
+
+
+    /**
+     * Convenient call for {@link org.greenrobot.greendao.AbstractDao#update(Object)}.
+     * Entity must attached to an entity context.
+     */
+    @Generated(hash = 713229351)
+    public void update() {
+        if (myDao == null) {
+            throw new DaoException("Entity is detached from DAO context");
+        }
+        myDao.update(this);
+    }
+
+
+    /** called by internal mechanisms, do not call yourself. */
+    @Generated(hash = 1253770181)
+    public void __setDaoSession(DaoSession daoSession) {
+        this.daoSession = daoSession;
+        myDao = daoSession != null ? daoSession.getNoteModelDao() : null;
+    }
+
+
+
 
 }

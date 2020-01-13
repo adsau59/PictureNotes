@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         super.onCreate(savedInstanceState);
 
         //dao
-        DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, "notes-db");
+        DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, "picturenotes-db");
         Database db = helper.getWritableDb();
         daoSession = new DaoMaster(db).newSession();
 
