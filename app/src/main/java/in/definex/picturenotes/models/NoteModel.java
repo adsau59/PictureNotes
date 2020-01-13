@@ -315,6 +315,7 @@ public class NoteModel {
     public NoteModel changeCodeAndSaveToDB(Context context, String newCode){
         List<ImageData> list = ImageData.getImagesFromCode(context,code);
         for(ImageData data: list)
+            //todo broke this, `changeCode` does nothing for now
             data.changeCode(context, newCode);
 
         NoteModel noteModel = new NoteModel(this);

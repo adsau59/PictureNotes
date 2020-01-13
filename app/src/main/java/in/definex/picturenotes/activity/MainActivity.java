@@ -53,6 +53,7 @@ import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.FileList;
 
+import org.greenrobot.greendao.database.Database;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -71,6 +72,8 @@ import java.util.concurrent.Callable;
 import in.definex.picturenotes.Adapters.BackupRecyclerAdapter;
 import in.definex.picturenotes.Adapters.FavouriteRecyclerAdapter;
 import in.definex.picturenotes.models.BackupModel;
+import in.definex.picturenotes.models.DaoMaster;
+import in.definex.picturenotes.models.DaoSession;
 import in.definex.picturenotes.models.FavouriteViewModel;
 import in.definex.picturenotes.models.ImageData;
 import in.definex.picturenotes.models.NoteModel;
@@ -87,11 +90,18 @@ import static in.definex.picturenotes.util.GooglePlayManager.REQUEST_PERMISSION_
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks, GooglePlayManager.ChooseAccount{
 
     GooglePlayManager gpm;
+    private DaoSession daoSession;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
+
+        //dao
+        DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, "notes-db");
+        Database db = helper.getWritableDb();
+        daoSession = new DaoMaster(db).newSession();
+
         setContentView(R.layout.activity_main);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -229,6 +239,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
             }
         }
+    }
+
+    //dao
+    public DaoSession getDaoSession() {
+        return daoSession;
     }
 
     //NOTEME GPM INTERFACE METHODS

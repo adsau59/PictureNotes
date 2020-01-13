@@ -5,16 +5,27 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
+import org.greenrobot.greendao.annotation.Entity;
+import org.greenrobot.greendao.annotation.Id;
+import org.greenrobot.greendao.annotation.Index;
+import org.greenrobot.greendao.annotation.NotNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import in.definex.picturenotes.activity.MainActivity;
 import in.definex.picturenotes.database.ImageDBHelper;
+import org.greenrobot.greendao.annotation.Generated;
 
 /**
  * Created by Adam on 27-07-2016.
  */
+@Entity
 public class ImageData {
+
+    @Id
     private int id;
+
     private String name;
     private String url;
     private int number;
@@ -33,6 +44,17 @@ public class ImageData {
         this.url = url;
         this.name = name;
         selected = false;
+    }
+    @Generated(hash = 1328844819)
+    public ImageData(int id, String name, String url, int number, Boolean selected) {
+        this.id = id;
+        this.name = name;
+        this.url = url;
+        this.number = number;
+        this.selected = selected;
+    }
+    @Generated(hash = 950102263)
+    public ImageData() {
     }
 
     public void setNumber(int number) {
@@ -67,122 +89,38 @@ public class ImageData {
         this.name = name;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+    public void setUrl(String url) {
+        this.url = url;
+    }
+    public Boolean getSelected() {
+        return this.selected;
+    }
 
 
 
 
     public void updateImageToDB(Context context){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getWritableDatabase();
-
-        // New value for one column
-        ContentValues values = new ContentValues();
-        values.put(ImageDBHelper.ImageEntry.COLUMN_IMAGE_NAME, name);
-        values.put(ImageDBHelper.ImageEntry.COLUMN_IMAGE_NUMBER, number);
-
-        // Which row to update, based on the title
-        String selection = ImageDBHelper.ImageEntry._ID + " LIKE ?";
-        String[] selectionArgs = { String.valueOf(getId()) };
-
-        db.update(
-            ImageDBHelper.ImageEntry.TABLE_NAME,
-            values,
-            selection,
-            selectionArgs);
-
-        db.close();
+        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
+        daoSession.getImageDataDao().update(this);
     }
 
     public  void changeCode(Context context, String code){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getWritableDatabase();
-
-        // New value for one column
-        ContentValues values = new ContentValues();
-        values.put(ImageDBHelper.ImageEntry.COLUMN_CODE, code);
-
-        String selection = ImageDBHelper.ImageEntry._ID + " LIKE ?";
-        String[] selectionArgs = { String.valueOf(getId()) };
-
-        db.update(
-                ImageDBHelper.ImageEntry.TABLE_NAME,
-                values,
-                selection,
-                selectionArgs);
-
-        db.close();
     }
 
     public void deleteImageFromDB(Context context){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getWritableDatabase();
-
-        String selection = ImageDBHelper.ImageEntry._ID + " = ?";
-        String[] selectionArgs = { String.valueOf(getId()) };
-
-        db.delete(ImageDBHelper.ImageEntry.TABLE_NAME, selection, selectionArgs);
-        db.close();
+        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
+        daoSession.getImageDataDao().delete(this);
     }
 
     public void saveImageDataToDB(Context context, String code){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getWritableDatabase();
-        ContentValues values = null;
-        values = new ContentValues();
-        values.put(ImageDBHelper.ImageEntry.COLUMN_IMAGE_URL, getUrl());
-        values.put(ImageDBHelper.ImageEntry.COLUMN_IMAGE_NAME, getName());
-        values.put(ImageDBHelper.ImageEntry.COLUMN_CODE, code);
-        values.put(ImageDBHelper.ImageEntry.COLUMN_IMAGE_NUMBER, getNumber());
-        db.insert(ImageDBHelper.ImageEntry.TABLE_NAME, null, values);
-        db.close();
+        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
+        daoSession.getImageDataDao().save(this);
     }
 
     public static List<ImageData> getImagesFromCode(Context context, String code){
-        ImageDBHelper imageDBHelper = new ImageDBHelper(context);
-        SQLiteDatabase db = imageDBHelper.getReadableDatabase();
-
-
-
-        //getting images from db
-        String[] projection = {
-                ImageDBHelper.ImageEntry._ID,
-                ImageDBHelper.ImageEntry.COLUMN_IMAGE_NUMBER,
-                ImageDBHelper.ImageEntry.COLUMN_IMAGE_NAME,
-                ImageDBHelper.ImageEntry.COLUMN_IMAGE_URL
-        };
-
-        String selection = ImageDBHelper.ImageEntry.COLUMN_CODE + " = ?";
-        String[] selectionArgs = {code};
-        String sortOrder = ImageDBHelper.ImageEntry.COLUMN_IMAGE_NUMBER + " ASC";
-
-        Cursor c = db.query(
-                ImageDBHelper.ImageEntry.TABLE_NAME,
-                projection,
-                selection,
-                selectionArgs,
-                null,
-                null,
-                sortOrder
-        );
-
-        List<ImageData> imageDatas = new ArrayList<>();
-
-        //if images are there, then add them to imageDatas
-        if(c.moveToFirst()){
-            do{
-                imageDatas.add(new ImageData(
-                        Integer.parseInt(c.getString(c.getColumnIndex(ImageDBHelper.ImageEntry._ID))),
-                        Integer.parseInt(c.getString(c.getColumnIndex(ImageDBHelper.ImageEntry.COLUMN_IMAGE_NUMBER))),
-                        c.getString(c.getColumnIndex(ImageDBHelper.ImageEntry.COLUMN_IMAGE_URL)),
-                        c.getString(c.getColumnIndex(ImageDBHelper.ImageEntry.COLUMN_IMAGE_NAME))
-                ));
-            }while(c.moveToNext());
-        }
-
-        db.close();
-        c.close();
-
-        return imageDatas;
-
+        return null;
     }
 }

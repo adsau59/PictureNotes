@@ -1,13 +1,14 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.greenrobot.greendao'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.1"
+    compileSdkVersion 28
+    buildToolsVersion "25.0.3"
 
     defaultConfig {
         applicationId "in.definex.picturenotes"
         minSdkVersion 22
-        targetSdkVersion 22
+        targetSdkVersion 28
         versionCode 10
         versionName "1.1.36-beta"
     }
@@ -30,6 +31,9 @@ repositories {
 
 
 dependencies {
+
+    implementation 'org.greenrobot:greendao:3.2.2'
+
     //compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.squareup.picasso:picasso:2.5.2'
 
