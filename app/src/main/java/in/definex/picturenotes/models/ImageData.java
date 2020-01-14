@@ -1,12 +1,7 @@
 package in.definex.picturenotes.models;
 
-import android.content.Context;
-
 import org.greenrobot.greendao.annotation.Entity;
 import org.greenrobot.greendao.annotation.Id;
-import org.greenrobot.greendao.annotation.NotNull;
-
-import java.util.List;
 
 import in.definex.picturenotes.activity.MainActivity;
 
@@ -32,7 +27,7 @@ public class ImageData {
     private Long nodeId;
 
     @ToOne(joinProperty = "nodeId")
-    private NoteModel note;
+    private Note note;
 
     /** Used to resolve relations */
     @Generated(hash = 2040040024)
@@ -46,15 +41,15 @@ public class ImageData {
     private transient Long note__resolvedKey;
 
     //region custom constructor
-    public ImageData(int number, String url, NoteModel noteModel){
-        this(number, url, null, noteModel);
+    public ImageData(int number, String url, Note note){
+        this(number, url, null, note);
     }
 
-    public ImageData(int number, String url, String name, NoteModel noteModel){
+    public ImageData(int number, String url, String name, Note note){
         this.number = number;
         this.url = url;
         this.name = name;
-        setNote(noteModel);
+        setNote(note);
     }
     //endregion
 
@@ -169,16 +164,16 @@ public class ImageData {
     }
 
     /** To-one relationship, resolved on first access. */
-    @Generated(hash = 489069693)
-    public NoteModel getNote() {
+    @Generated(hash = 2108932088)
+    public Note getNote() {
         Long __key = this.nodeId;
         if (note__resolvedKey == null || !note__resolvedKey.equals(__key)) {
             final DaoSession daoSession = this.daoSession;
             if (daoSession == null) {
                 throw new DaoException("Entity is detached from DAO context");
             }
-            NoteModelDao targetDao = daoSession.getNoteModelDao();
-            NoteModel noteNew = targetDao.load(__key);
+            NoteDao targetDao = daoSession.getNoteDao();
+            Note noteNew = targetDao.load(__key);
             synchronized (this) {
                 note = noteNew;
                 note__resolvedKey = __key;
@@ -188,8 +183,8 @@ public class ImageData {
     }
 
     /** called by internal mechanisms, do not call yourself. */
-    @Generated(hash = 919884059)
-    public void setNote(NoteModel note) {
+    @Generated(hash = 864589216)
+    public void setNote(Note note) {
         synchronized (this) {
             this.note = note;
             nodeId = note == null ? null : note.getId();

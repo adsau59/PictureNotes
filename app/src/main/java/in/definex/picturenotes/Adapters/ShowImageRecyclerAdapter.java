@@ -31,8 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import in.definex.picturenotes.models.ImageData;
+import in.definex.picturenotes.models.Note;
 import in.definex.picturenotes.util.ImageLoader;
-import in.definex.picturenotes.models.NoteModel;
 import in.definex.picturenotes.R;
 import in.definex.picturenotes.activity.ShowImageActivity;
 import in.definex.picturenotes.util.UtilityFunctions;
@@ -55,15 +55,15 @@ public class ShowImageRecyclerAdapter extends RecyclerView.Adapter<ShowImageRecy
     private Drawable closeIcon;
     private Drawable deleteIcon;
 
-    private NoteModel noteModel;
+    private Note note;
 
-    public ShowImageRecyclerAdapter(Context context, List<ImageData>imageDatas, NoteModel noteModel){
+    public ShowImageRecyclerAdapter(Context context, List<ImageData>imageDatas, Note note){
         this.inflater = LayoutInflater.from(context);
         this.context = context;
         updateData(imageDatas);
         defaultBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.defaut_img);
 
-        this.noteModel = noteModel;
+        this.note = note;
 
         shareIcon = UtilityFunctions.makeIcon(context, "\uf064");
         editIcon = UtilityFunctions.makeIcon(context, "\uf044",30);
@@ -310,7 +310,7 @@ public class ShowImageRecyclerAdapter extends RecyclerView.Adapter<ShowImageRecy
                             public void onClick(DialogInterface dialog, int which) {
                                 //delete image from db
                                 imageDatas.get(pos).delete();
-                                noteModel.cachedShareNoteDisturbed(context);
+                                note.cachedShareNoteDisturbed(context);
                                 UtilityFunctions.setFavDisturbed(context, true);
                                 if(((CheckBox)v1.findViewById(R.id.deleteImagesCheckBox)).isChecked())
                                     UtilityFunctions.deleteImage(context, imageDatas.get(pos).getUrl());

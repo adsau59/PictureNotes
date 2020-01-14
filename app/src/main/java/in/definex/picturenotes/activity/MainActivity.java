@@ -73,9 +73,8 @@ import in.definex.picturenotes.Adapters.FavouriteRecyclerAdapter;
 import in.definex.picturenotes.models.BackupModel;
 import in.definex.picturenotes.models.DaoMaster;
 import in.definex.picturenotes.models.DaoSession;
-import in.definex.picturenotes.models.FavouriteViewModel;
 import in.definex.picturenotes.models.ImageData;
-import in.definex.picturenotes.models.NoteModel;
+import in.definex.picturenotes.models.Note;
 import in.definex.picturenotes.R;
 import in.definex.picturenotes.util.GooglePlayManager;
 import in.definex.picturenotes.util.UtilityFunctions;
@@ -397,28 +396,23 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
     }
 
-    List<FavouriteViewModel> favList;
     FavouriteRecyclerAdapter adapter;
     Context c;
     private void setFavList(){
         c = this;
 
-        favList = new ArrayList<>();
-        List<NoteModel> noteModels = NoteModel.getFavNotesFromDB(c);
+        List<Note> notes = Note.getFavNotesFromDB();
 
         final RecyclerView recyclerView = (RecyclerView) findViewById(R.id.favRecycler);
-
-        for (NoteModel noteModel : noteModels)
-            favList.add(FavouriteViewModel.noteToFavVM(noteModel, c));
 
         //Log.d("size of fav", favList.size()+"");
 
 
-        adapter = new FavouriteRecyclerAdapter(c, favList){
+        adapter = new FavouriteRecyclerAdapter(c, notes){
             @Override
             public void onItemClick(int pos) {
                 Intent intent = new Intent(c, ShowImageActivity.class);
-                intent.putExtra("code", favList.get(pos).note.getCode());
+                intent.putExtra("code", notes.get(pos).getCode());
                 startActivity(intent);
             }
         };
@@ -450,7 +444,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
         //autocomplete search
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_dropdown_item_1line, NoteModel.getAllCodes(this));
+                android.R.layout.simple_dropdown_item_1line, Note.getAllCodes());
 
         AutoCompleteTextView textView = (AutoCompleteTextView)
                 findViewById(R.id.editText);
@@ -577,11 +571,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
                 String dsc = jsonObject.getString("description");
 
-                if(NoteModel.DoesCodeExists(code))
+                if(Note.DoesCodeExists(code))
                     return false;
 
-                NoteModel noteModel = new NoteModel(code, dsc, false);
-                noteModel.saveNoteInDB();
+                Note note = new Note(code, dsc, false);
+                note.saveNoteInDB();
 
                 JSONArray jsonArray = jsonObject.getJSONArray("imageDatas");
                 for(int i=0; i<jsonArray.length(); i++){
@@ -598,7 +592,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     fos.flush();
                     fos.close();
 
-                    new ImageData(imageDataJson.getInt("number"), imageUrl, imageDataJson.getString("name"), noteModel).save();
+                    new ImageData(imageDataJson.getInt("number"), imageUrl, imageDataJson.getString("name"), note).save();
                 }
             } catch (Exception e) {
                 e.printStackTrace();

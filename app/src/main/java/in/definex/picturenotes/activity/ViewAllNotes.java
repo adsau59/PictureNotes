@@ -14,14 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import in.definex.picturenotes.Adapters.FavouriteRecyclerAdapter;
-import in.definex.picturenotes.models.FavouriteViewModel;
-import in.definex.picturenotes.models.NoteModel;
+import in.definex.picturenotes.models.Note;
 import in.definex.picturenotes.R;
 
 public class ViewAllNotes extends AppCompatActivity {
 
     Context c;
-    List<FavouriteViewModel> favList;
     FavouriteRecyclerAdapter adapter;
 
     @Override
@@ -35,23 +33,14 @@ public class ViewAllNotes extends AppCompatActivity {
 
         c = this;
 
-        favList = new ArrayList<>();
-        List<NoteModel> noteModels = NoteModel.getAllNotes(c);
-
-
-        for (NoteModel noteModel : noteModels) {
-            favList.add(FavouriteViewModel.noteToFavVM(noteModel, c));
-            Log.d("code",noteModel.getCode());
-        }
-
-        //Log.d("size of fav", favList.size()+"");
+        List<Note> notes = Note.getAllNotes();
 
         final RecyclerView recyclerView = (RecyclerView) findViewById(R.id.viewAllNotesRecycler);
-        adapter = new FavouriteRecyclerAdapter(c, favList){
+        adapter = new FavouriteRecyclerAdapter(c, notes){
             public void onItemClick(int pos) {
                 Log.d("Pressed", pos + "");
                 Intent intent = new Intent(c, ShowImageActivity.class);
-                intent.putExtra("code", favList.get(pos).note.getCode());
+                intent.putExtra("code", notes.get(pos).getCode());
                 startActivity(intent);
 
             }
@@ -65,23 +54,14 @@ public class ViewAllNotes extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        favList = new ArrayList<>();
-        List<NoteModel> noteModels = NoteModel.getAllNotes(c);
-
-
-        for (NoteModel noteModel : noteModels) {
-            favList.add(FavouriteViewModel.noteToFavVM(noteModel, c));
-            Log.d("code",noteModel.getCode());
-        }
-
-        //Log.d("size of fav", favList.size()+"");
+        List<Note> notes = Note.getAllNotes();
 
         final RecyclerView recyclerView = (RecyclerView) findViewById(R.id.viewAllNotesRecycler);
-        adapter = new FavouriteRecyclerAdapter(c, favList){
+        adapter = new FavouriteRecyclerAdapter(c, notes){
             public void onItemClick(int pos) {
                 Log.d("Pressed", pos + "");
                 Intent intent = new Intent(c, ShowImageActivity.class);
-                intent.putExtra("code", favList.get(pos).note.getCode());
+                intent.putExtra("code", notes.get(pos).getCode());
                 startActivity(intent);
 
             }

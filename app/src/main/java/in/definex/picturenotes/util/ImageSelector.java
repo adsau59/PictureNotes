@@ -8,13 +8,11 @@ import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 
-import com.google.common.base.Function;
-
 import java.io.File;
 
 import in.definex.picturenotes.R;
 import in.definex.picturenotes.models.ImageData;
-import in.definex.picturenotes.models.NoteModel;
+import in.definex.picturenotes.models.Note;
 
 public class ImageSelector {
 
@@ -27,6 +25,10 @@ public class ImageSelector {
         this.code = code;
     }
 
+    public interface Callback{
+        void function();
+    }
+
     public void StartIntent()
     {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -36,8 +38,17 @@ public class ImageSelector {
         activity.startActivityForResult(Intent.createChooser(intent,activity.getResources().getString(R.string.select_images)), DEFINE.GALLERY_CODE);
     }
 
-    public void HandleCallback(final Intent intent,final NoteModel noteModel, final Function postCallback)
+    public void manageResults(int requestCode, int resultCode, final Intent intent, final Note note, Callback preCallback, Callback postCallback)
     {
+        if(
+                (requestCode != DEFINE.GALLERY_CODE && resultCode != Activity.RESULT_OK) ||
+                        intent == null
+        )
+            return;
+
+        if(preCallback != null)
+            preCallback.function();
+
         final ClipData data = intent.getClipData();
 
         new Thread(){
@@ -51,7 +62,8 @@ public class ImageSelector {
                         String path = get_image_path_from_uri(data.getItemAt(i).getUri());
                         path = move_or_copy_image(path);
 
-                        ImageData imageData = new ImageData(++lastImageNumber, path, noteModel);
+                        ImageData imageData = new ImageData(++lastImageNumber, path, note);
+                        note.getImageDatas().add(imageData);
                         imageData.save();
 
                     }
@@ -60,11 +72,13 @@ public class ImageSelector {
                     String imagePath = get_image_path_from_uri(intent.getData());
                     String path = move_or_copy_image(imagePath);
 
-                    ImageData imageData = new ImageData(++lastImageNumber, path, noteModel);
+                    ImageData imageData = new ImageData(++lastImageNumber, path, note);
+                    note.getImageDatas().add(imageData);
                     imageData.save();
                 }
                 activity.runOnUiThread(() -> {
-                    postCallback.apply(null);
+                    if(postCallback != null)
+                        postCallback.function();
                 });
             }
         }.start();
@@ -113,4 +127,6 @@ public class ImageSelector {
     }
 
 
+    public void manageResults(int requestCode, int resultCode, Intent intent, Note note, Object o) {
+    }
 }

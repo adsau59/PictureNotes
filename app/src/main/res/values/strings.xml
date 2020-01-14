@@ -16,10 +16,10 @@
     <string name="favorite_your_notes_to_find_them_at_home">Favorite your notes to find them at home</string>
     <string name="delete_image_s_from_phone">Delete Image(s) from phone</string>
     <string name="creating_a_note">Creating a Note</string>
-    <string name="here_we_write_description">Here we write description of the note, its optional</string>
+    <string name="here_we_write_description">Here we write description of the notes, its optional</string>
     <string name="selecting_images">Selecting Images</string>
     <string name="now_press_next">Now press Next to open gallery and select images</string>
-    <string name="here_we_write_a_unique_code">Here we write a unique name for the note</string>
+    <string name="here_we_write_a_unique_code">Here we write a unique name for the notes</string>
     <string name="next">Next</string>
     <string name="enter_code_to_create_a_note">Enter a unique name</string>
     <string name="code_already_exists">Name already exists, would you like to open it</string>
@@ -34,7 +34,7 @@
     <string name="from_drive">From Drive</string>
     <string name="from_where_you_would_like_to_import">From where you would like to import</string>
     <string name="lets_make_a_note">Lets make a Note</string>
-    <string name="tap_the_plus_button_to_create_note">Tap the plus button to create a note</string>
+    <string name="tap_the_plus_button_to_create_note">Tap the plus button to create a notes</string>
     <string name="skip">skip</string>
     <string name="loading_please_wait">Loading, Please wait…</string>
     <string name="unzipping_please_wait">Unzipping, Please wait..</string>
@@ -98,7 +98,7 @@
     <string name="max_10_characters">max 10 characters</string>
     <string name="space_file_not_found">" file not found"</string>
     <string name="select_type_of_message">Select type of message</string>
-    <string name="space_more">" more"</string>
+    <string name="space_more">%d more</string>
     <string name="name">Name:</string>
     <string name="email">Email:</string>
     <string name="developers">Developers</string>

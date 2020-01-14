@@ -73,7 +73,7 @@ import java.util.concurrent.Callable;
 
 import in.definex.picturenotes.Adapters.ShowImageRecyclerAdapter;
 import in.definex.picturenotes.models.ImageData;
-import in.definex.picturenotes.models.NoteModel;
+import in.definex.picturenotes.models.Note;
 import in.definex.picturenotes.R;
 import in.definex.picturenotes.util.DEFINE;
 import in.definex.picturenotes.util.GooglePlayManager;
@@ -90,7 +90,7 @@ import static in.definex.picturenotes.util.GooglePlayManager.REQUEST_PERMISSION_
 public class ShowImageActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks, GooglePlayManager.ChooseAccount {
 
     String code;
-    NoteModel noteModel;
+    Note note;
 
     FloatingActionButton fab;
     TextDrawable favOn;
@@ -110,14 +110,14 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
         Log.d("code", code);
         //get note from db
-        noteModel = NoteModel.GetNoteByCode(code);
+        note = Note.GetNoteByCode(code);
 
         favOff = UtilityFunctions.makeIcon(this, "\uf006",20);
         favOn = UtilityFunctions.makeIcon(this, "\uf005",20);
 
 
         //if none found
-        if(noteModel == null) {
+        if(note == null) {
             Toast.makeText(this, R.string.no_image_found_with_given_code, Toast.LENGTH_LONG).show();
             finish();
             return;
@@ -133,7 +133,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
         loadImageLvFromDb();
 
         fab = (FloatingActionButton) findViewById(R.id.addImageFab);
-        setFabMode(false);
+        set_action_button_mode(false);
 
 
         //NOTEME GPM CREDENTIALS INITIALIZATION
@@ -194,7 +194,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
                         case 5:
                             sv.hide();
-                            noteModel.deleteNoteAndImagesFromDB();
+                            note.deleteNoteAndImagesFromDB();
                             finish();
                             break;
                     }
@@ -229,8 +229,8 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
 
                 final View v = getEditDialouge(context);
-                ((EditText)v.findViewById(R.id.editDescEt)).setText(noteModel.getDescription());
-                ((EditText)v.findViewById(R.id.editCodeEt)).setText(noteModel.getCode());
+                ((EditText)v.findViewById(R.id.editDescEt)).setText(note.getDescription());
+                ((EditText)v.findViewById(R.id.editCodeEt)).setText(note.getCode());
 
 
                 final AlertDialog dialog = new AlertDialog.Builder(context).setTitle(R.string.edit_code_and_description)
@@ -254,7 +254,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                                     return;
                                 }
 
-                                if(!newCode.equals(noteModel.getCode()) && NoteModel.DoesCodeExists(newCode)){
+                                if(!newCode.equals(note.getCode()) && Note.DoesCodeExists(newCode)){
                                     Toast.makeText(context, R.string.code_must_be_unique, Toast.LENGTH_LONG).show();
                                     return;
                                 }
@@ -272,12 +272,12 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
                                 //validation ends
 
-                                noteModel.setDescription(newDesc);
+                                note.setDescription(newDesc);
 
-                                if(!newCode.equals(noteModel.getCode()))
-                                    noteModel = noteModel.changeCodeAndSaveToDB(newCode);
+                                if(!newCode.equals(note.getCode()))
+                                    note = note.changeCodeAndSaveToDB(newCode);
 
-                                code = noteModel.getCode();
+                                code = note.getCode();
                                 update_code_and_desc_view();
 
                                 UtilityFunctions.setFavDisturbed(context, true);
@@ -296,8 +296,8 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
     }
 
     private void update_code_and_desc_view(){
-        ((TextView)findViewById(R.id.codeTextView)).setText(noteModel.getCode());
-        ((TextView)findViewById(R.id.descriptionTextView)).setText(noteModel.getDescription());
+        ((TextView)findViewById(R.id.codeTextView)).setText(note.getCode());
+        ((TextView)findViewById(R.id.descriptionTextView)).setText(note.getDescription());
     }
 
     ShowcaseView sv;
@@ -307,11 +307,11 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
     ShowImageRecyclerAdapter adapter;
     //NOTEME load Image
     private void loadImageLvFromDb(){
-        List<ImageData> imageDatas = NoteModel.GetNoteByCode(code).getImageDatas();
+        List<ImageData> imageDatas = Note.GetNoteByCode(code).getImageDatas();
         lastImageNumber = imageDatas.size() !=0 ?imageDatas.get(imageDatas.size()-1).getNumber():0;
 
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recyclerview);
-        adapter = new ShowImageRecyclerAdapter(this, imageDatas, noteModel);
+        adapter = new ShowImageRecyclerAdapter(this, imageDatas, note);
 
         adapter.setActivityFuncs(new ShowImageRecyclerAdapter.ActivityFuncs() {
             @Override
@@ -403,11 +403,11 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                 new Thread(){
                     @Override
                     public void run() {
-                        NoteModel.GetNoteByCode(code).updateAllImages();
+                        Note.GetNoteByCode(code).updateAllImages();
                     }
                 }.start();
 
-                noteModel.cachedShareNoteDisturbed(context);
+                note.cachedShareNoteDisturbed(context);
                 UtilityFunctions.setFavDisturbed(context, true);
 
                 adapter.notifyDataSetChanged();
@@ -424,23 +424,19 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
      *
      * @param requestCode DEFINE.GALLERY_CODE for image selection
      * @param resultCode Activity.RESULT_OK if activity was successful
-     * @param data intent result
+     * @param intent intent result
      */
     protected void onActivityResult(int requestCode, int resultCode,
-                                    Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        gpm.manageResults(requestCode,resultCode,data);
+                                    Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+        gpm.manageResults(requestCode,resultCode,intent);
 
-        if(requestCode != DEFINE.GALLERY_CODE && resultCode != Activity.RESULT_OK)
-            return;
+        imageSelector.manageResults(requestCode, resultCode, intent, note, null, () -> {
+            note.cachedShareNoteDisturbed(ShowImageActivity.this);
+            UtilityFunctions.setFavDisturbed(ShowImageActivity.this, true);
 
-        imageSelector.HandleCallback(data, noteModel, (o)->{
-            noteModel.cachedShareNoteDisturbed(this);
-            UtilityFunctions.setFavDisturbed(this, true);
-
-            List<ImageData> imageDatas = NoteModel.GetNoteByCode(code).getImageDatas();
+            List<ImageData> imageDatas = note.getImageDatas();
             adapter.updateListData(imageDatas);
-            return null;
         });
 
     }
@@ -460,7 +456,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
     //NOTEME WHEN CALLED CHANGES FAV IN DB THEN CHANGES ICON
     private void updateFavStatus(boolean fav){
-        noteModel.updateFavStatusInDB(fav);
+        note.updateFavStatusInDB(fav);
         requestUpdateFavView();
         changeFavIcon(fav);
     }
@@ -520,7 +516,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                     break;
 
                 case R.id.favourite:
-                    changeFavIcon(noteModel.isFav());
+                    changeFavIcon(note.isFav());
                     break;
 
                 case R.id.cancleDeleteMenuButton:
@@ -541,7 +537,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
      *
      * @param deleteMode true if on delete mode
      */
-    private void setFabMode(Boolean deleteMode){
+    private void set_action_button_mode(Boolean deleteMode){
         if(!deleteMode){
             fab.setImageDrawable(UtilityFunctions.makeIcon(this, "\uF067"));
             fab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorAccent)));
@@ -552,70 +548,55 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
             fab.setImageDrawable(UtilityFunctions.makeIcon(this, "\uf1f8"));
             fab.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.secodaryColorAccent)));
             final Context c = this;
-            fab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
+            fab.setOnClickListener(view -> {
+                final View v1 = getDeleteImageDialogeView(c);
 
+                AlertDialog.Builder builder2 = new AlertDialog.Builder(c);
 
-                    final View v1 = getDeleteImageDialogeView(c);
+                final List<ImageData> selectedImages = adapter.selectedImages();
 
-                    AlertDialog.Builder builder2 = new AlertDialog.Builder(c);
-
-                    final List<ImageData> selectedImages = adapter.selectedImages();
-
-                    if(selectedImages.size()<=0){
-                        Toast.makeText(c, R.string.select_images_to_delete_first, Toast.LENGTH_LONG).show();
-                        return;
-                    }
-
-                    builder2.setMessage(R.string.delete_images)
-                            .setView(v1)
-                            .setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-
-                                    boolean deleteFile = ((CheckBox)v1.findViewById(R.id.deleteImagesCheckBox)).isChecked();
-
-                                    for(int i=0; i<selectedImages.size(); i++){
-
-                                        if(deleteFile)
-                                            UtilityFunctions.deleteImage(c,selectedImages.get(i).getUrl());
-
-                                        selectedImages.get(i).delete();
-
-
-                                        adapter.imageDatas.remove(selectedImages.get(i));
-                                    }
-
-                                    for(int i=0, num=1; i<adapter.imageDatas.size(); i++,num++)
-                                        adapter.imageDatas.get(i).setNumber(num);
-
-                                    new Thread(){
-                                        @Override
-                                        public void run() {
-                                            NoteModel.GetNoteByCode(code).updateAllImages();
-                                        }
-                                    }.start();
-
-                                    noteModel.cachedShareNoteDisturbed(c);
-
-                                    adapter.updateData(adapter.imageDatas);
-                                    adapter.notifyDataSetChanged();
-
-                                    setDeletMode(false);
-                                    requestUpdateFavView();
-
-                                }
-                            }).setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-
-                        }
-                    });
-                    builder2.show();
-
-
+                if(selectedImages.size()<=0){
+                    Toast.makeText(c, R.string.select_images_to_delete_first, Toast.LENGTH_LONG).show();
+                    return;
                 }
+
+                builder2.setMessage(R.string.delete_images)
+                        .setView(v1)
+                        .setPositiveButton(R.string.delete, (dialog, which) -> {
+
+                            boolean deleteFile = ((CheckBox)v1.findViewById(R.id.deleteImagesCheckBox)).isChecked();
+
+                            for(int i=0; i<selectedImages.size(); i++){
+
+                                if(deleteFile)
+                                    UtilityFunctions.deleteImage(c,selectedImages.get(i).getUrl());
+
+                                selectedImages.get(i).delete();
+                                adapter.imageDatas.remove(selectedImages.get(i));
+                            }
+
+                            for(int i=0, num=1; i<adapter.imageDatas.size(); i++,num++)
+                                adapter.imageDatas.get(i).setNumber(num);
+
+                            new Thread(){
+                                @Override
+                                public void run() {
+                                    Note.GetNoteByCode(code).updateAllImages();
+                                }
+                            }.start();
+
+                            note.cachedShareNoteDisturbed(c);
+
+                            adapter.updateData(adapter.imageDatas);
+                            adapter.notifyDataSetChanged();
+
+                            setDeletMode(false);
+                            requestUpdateFavView();
+
+                        }).setNegativeButton(R.string.cancel, null);
+                builder2.show();
+
+
             });
 
         }
@@ -634,7 +615,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
         }
         setIcons();
         adapter.setSelector(bool);
-        setFabMode(bool);
+        set_action_button_mode(bool);
         adapter.notifyDataSetChanged();
 
     }
@@ -659,8 +640,8 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
             case R.id.favourite:
 
 
-                noteModel.setFav(!noteModel.isFav());
-                updateFavStatus(noteModel.isFav());
+                note.setFav(!note.isFav());
+                updateFavStatus(note.isFav());
 
                 break;
 
@@ -682,7 +663,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
                                 requestUpdateFavView();
 
-                                noteModel.deleteNoteAndImagesFromDB();
+                                note.deleteNoteAndImagesFromDB();
                                 finish();
 
 
@@ -753,9 +734,9 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                 //NOTEME CREATING EXPORTNOTETASK AND ADDING CALLBACKMETHOD TO RUN MAKEREQUESTASK AFTER EXPORTING
 
                 //CHECKING IF NOTE IS UNCHANGED
-                if(noteModel.getCachedNoteIntegrity(this)){
-                    String fileId = noteModel.getCachedSharedNote(this);
-                    shareFromFileId(noteModel, this, fileId);
+                if(note.getCachedNoteIntegrity(this)){
+                    String fileId = note.getCachedSharedNote(this);
+                    shareFromFileId(note, this, fileId);
                 }else{
                     //ELSE
                     ExportNoteTask exportNoteTask = new ExportNoteTask(this,true){
@@ -859,7 +840,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
             JSONObject jsonObject = new JSONObject();
             try {
                 jsonObject.put("code", code);
-                jsonObject.put("description",noteModel.getDescription() );
+                jsonObject.put("description", note.getDescription() );
 
                 JSONArray jsonArray = new JSONArray();
                 JSONObject jsonImageObj;
@@ -898,7 +879,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                 //File IO
                 String subTitle = toShare ?" exports":"backup";
 
-                final String fileName = noteModel.getCode()+subTitle+exportNo+".pnd";
+                final String fileName = note.getCode()+subTitle+exportNo+".pnd";
                 File dir = new File(exportLoc);
 
                 if(!dir.exists()){
@@ -1024,8 +1005,8 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
         private String toShareBG() throws IOException {
 
-            if(!noteModel.getCachedSharedNote(context).isEmpty() && !noteModel.getCachedNoteIntegrity(context)){
-                deleteFile(noteModel.getCachedSharedNote(context));
+            if(!note.getCachedSharedNote(context).isEmpty() && !note.getCachedNoteIntegrity(context)){
+                deleteFile(note.getCachedSharedNote(context));
             }
 
             //if folder was never created
@@ -1055,7 +1036,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
             fileId = uploadFileToApi(pictureNotesFolderId);
             makeFileSharable(fileId);
-            noteModel.cacheSharedNote(context, fileId);
+            note.cacheSharedNote(context, fileId);
             return fileId;
 
         }
@@ -1188,7 +1169,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
             file.delete();
 
             if(toShare) {
-                shareFromFileId(noteModel, context, link);
+                shareFromFileId(note, context, link);
             }else{
                 Toast.makeText(context,
                         context.getString(R.string.uploaded_to_drive)+" ("+context.getString(R.string.app_name)+")",
@@ -1226,13 +1207,13 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
         }
     }
 
-    public static void shareFromFileId(NoteModel noteModel, Context context, String fileId){
+    public static void shareFromFileId(Note note, Context context, String fileId){
         String newDesc = "";
-        if (!noteModel.getDescription().isEmpty())
-            newDesc = "\n" + noteModel.getDescription();
+        if (!note.getDescription().isEmpty())
+            newDesc = "\n" + note.getDescription();
 
 
-        String shareBody = context.getString(R.string.shared_via_space)+ context.getString(R.string.app_name) + "\n\n" + context.getString(R.string.code)+": " + noteModel.getCode() + newDesc + "\n" + makeSharableLink(fileId);
+        String shareBody = context.getString(R.string.shared_via_space)+ context.getString(R.string.app_name) + "\n\n" + context.getString(R.string.code)+": " + note.getCode() + newDesc + "\n" + makeSharableLink(fileId);
         Intent sharingIntent = new Intent(android.content.Intent.ACTION_SEND);
         sharingIntent.setType("text/plain");
         sharingIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, context.getString(R.string.shared_via_space)+context.getString(R.string.app_name));

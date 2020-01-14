@@ -20,7 +20,7 @@ import org.greenrobot.greendao.DaoException;
  */
 
 @Entity
-public class NoteModel {
+public class Note {
 
     @Id(autoincrement = true)
     private Long id;
@@ -39,19 +39,19 @@ public class NoteModel {
     private transient DaoSession daoSession;
 
     /** Used for active entity operations. */
-    @Generated(hash = 826845092)
-    private transient NoteModelDao myDao;
+    @Generated(hash = 363862535)
+    private transient NoteDao myDao;
 
     //region custom constructors
-    public NoteModel(String code, String description) {
+    public Note(String code, String description) {
         this(code, description, false, "", "");
     }
 
-    public NoteModel(String code, String description, boolean isFav){
+    public Note(String code, String description, boolean isFav){
         this(code, description, isFav, "", "");
     }
 
-    public NoteModel(String code, String description, boolean isFav, String readonly, String password) {
+    public Note(String code, String description, boolean isFav, String readonly, String password) {
         this(null, code, description, isFav, readonly, password);
     }
 
@@ -60,30 +60,30 @@ public class NoteModel {
 
     //region Static Functions
     public static boolean DoesCodeExists(String code){
-        return GetDao().queryBuilder().where(NoteModelDao.Properties.Code.eq(code)).build().unique() != null;
+        return GetDao().queryBuilder().where(NoteDao.Properties.Code.eq(code)).build().unique() != null;
     }
 
-    public static List<NoteModel> getFavNotesFromDB(Context context){
-        return GetDao().queryBuilder().where(NoteModelDao.Properties.IsFav.eq(true)).build().list();
+    public static List<Note> getFavNotesFromDB(){
+        return GetDao().queryBuilder().where(NoteDao.Properties.IsFav.eq(true)).build().list();
     }
 
-    public static List<NoteModel> getAllNotes(Context context){
+    public static List<Note> getAllNotes(){
         return GetDao().loadAll();
     }
-    public static String[] getAllCodes(Context context){
+    public static String[] getAllCodes(){
 
-        List<NoteModel> notes = GetDao().loadAll();
+        List<Note> notes = GetDao().loadAll();
 
         List<String> codes = new ArrayList<>();
-        for(NoteModel n: notes)
+        for(Note n: notes)
             codes.add(n.code);
 
         return codes.toArray(new String[0]);
     }
 
-    public static NoteModelDao GetDao()
+    public static NoteDao GetDao()
     {
-        return MainActivity.GetDaoSession().getNoteModelDao();
+        return MainActivity.GetDaoSession().getNoteDao();
     }
     //endregion
 
@@ -161,14 +161,14 @@ public class NoteModel {
         update();
     }
 
-    public NoteModel changeCodeAndSaveToDB(String newCode){
+    public Note changeCodeAndSaveToDB(String newCode){
         this.code = newCode;
         update();
         return this;
     }
 
-    public static NoteModel GetNoteByCode(String code){
-        return GetDao().queryBuilder().where(NoteModelDao.Properties.Code.eq(code)).build().unique();
+    public static Note GetNoteByCode(String code){
+        return GetDao().queryBuilder().where(NoteDao.Properties.Code.eq(code)).build().unique();
 
     }
 
@@ -210,12 +210,12 @@ public class NoteModel {
     //region Dao Generated
 
 
-    @Generated(hash = 1532285157)
-    public NoteModel() {
+    @Generated(hash = 1272611929)
+    public Note() {
     }
 
-    @Generated(hash = 827459215)
-    public NoteModel(Long id, String code, String description, boolean isFav, String readonly, String password) {
+    @Generated(hash = 190288636)
+    public Note(Long id, String code, String description, boolean isFav, String readonly, String password) {
         this.id = id;
         this.code = code;
         this.description = description;
@@ -273,7 +273,7 @@ public class NoteModel {
      * To-many relationship, resolved on first access (and after reset).
      * Changes to to-many relations are not persisted, make changes to the target entity.
      */
-    @Generated(hash = 834232635)
+    @Generated(hash = 1749218249)
     public List<ImageData> getImageDatas() {
         if (imageDatas == null) {
             final DaoSession daoSession = this.daoSession;
@@ -281,7 +281,7 @@ public class NoteModel {
                 throw new DaoException("Entity is detached from DAO context");
             }
             ImageDataDao targetDao = daoSession.getImageDataDao();
-            List<ImageData> imageDatasNew = targetDao._queryNoteModel_ImageDatas(id);
+            List<ImageData> imageDatasNew = targetDao._queryNote_ImageDatas(id);
             synchronized (this) {
                 if (imageDatas == null) {
                     imageDatas = imageDatasNew;
@@ -291,12 +291,11 @@ public class NoteModel {
         return imageDatas;
     }
 
-    
 /** called by internal mechanisms, do not call yourself. */
-@Generated(hash = 1253770181)
+@Generated(hash = 799086675)
 public void __setDaoSession(DaoSession daoSession) {
     this.daoSession = daoSession;
-    myDao = daoSession != null ? daoSession.getNoteModelDao() : null;
+    myDao = daoSession != null ? daoSession.getNoteDao() : null;
 }
 
     //endregion

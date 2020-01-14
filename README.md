@@ -14,8 +14,8 @@ Picture Notes has come for rescue, now with Picture Notes you can
 - forget about the notes you don't need right away and search for them later.
 - favorite the notes you need to use daily
 - move (option) the pictures to a separate folder so that it your notes doesn't clutter your gallery.
-- upload your note to drive so that you don't loose your important pictures.
-- share your note with your friends.
+- upload your notes to drive so that you don't loose your important pictures.
+- share your notes with your friends.
 
 Picture Notes, a gallery app made especially for your notes.
 

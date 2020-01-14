@@ -16,7 +16,7 @@ import android.widget.Toast;
 import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.github.amlcurran.showcaseview.targets.ViewTarget;
 
-import in.definex.picturenotes.models.NoteModel;
+import in.definex.picturenotes.models.Note;
 import in.definex.picturenotes.R;
 import in.definex.picturenotes.util.DEFINE;
 import in.definex.picturenotes.util.ImageSelector;
@@ -170,7 +170,7 @@ public class CreateNoteActivity extends AppCompatActivity {
             }
 
             //if code already exists
-            if(NoteModel.DoesCodeExists(code)){
+            if(Note.DoesCodeExists(code)){
                 android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
 
 
@@ -195,7 +195,7 @@ public class CreateNoteActivity extends AppCompatActivity {
             //form validation ends
 
             //create new note and start image selection using fish buns
-            noteModel = new NoteModel(code,dsc,false);
+            note = new Note(code,dsc,false);
 
             imageSelector = new ImageSelector(this, code);
             imageSelector.StartIntent();
@@ -206,7 +206,7 @@ public class CreateNoteActivity extends AppCompatActivity {
     }
 
     private ImageSelector imageSelector;
-    NoteModel noteModel;
+    Note note;
 
     /**
      * Executed after returned from image selection
@@ -218,14 +218,9 @@ public class CreateNoteActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
 
-        if(requestCode != DEFINE.GALLERY_CODE && resultCode != Activity.RESULT_OK)
-            return;
-
-        noteModel.saveNoteInDB();
-        imageSelector.HandleCallback(intent, noteModel, (o)->{
-            openNote(code);
-            return null;
-        });
+        imageSelector.manageResults(requestCode, resultCode, intent, note,
+                () -> note.saveNoteInDB(),
+                () -> openNote(code));
 
     }
 
