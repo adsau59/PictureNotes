@@ -1,15 +1,8 @@
 package in.definex.picturenotes.activity;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
-import android.content.ClipData;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
-import android.net.Uri;
-import android.os.Environment;
-import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -23,9 +16,6 @@ import android.widget.Toast;
 import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.github.amlcurran.showcaseview.targets.ViewTarget;
 
-import java.io.File;
-
-import in.definex.picturenotes.models.ImageData;
 import in.definex.picturenotes.models.NoteModel;
 import in.definex.picturenotes.R;
 import in.definex.picturenotes.util.DEFINE;
@@ -180,7 +170,7 @@ public class CreateNoteActivity extends AppCompatActivity {
             }
 
             //if code already exists
-            if(NoteModel.isCodeInDB(this, code)){
+            if(NoteModel.DoesCodeExists(code)){
                 android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
 
 
@@ -231,7 +221,7 @@ public class CreateNoteActivity extends AppCompatActivity {
         if(requestCode != DEFINE.GALLERY_CODE && resultCode != Activity.RESULT_OK)
             return;
 
-        noteModel.saveNoteInDB(this);
+        noteModel.saveNoteInDB();
         imageSelector.HandleCallback(intent, noteModel, (o)->{
             openNote(code);
             return null;

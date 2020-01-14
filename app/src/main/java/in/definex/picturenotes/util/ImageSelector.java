@@ -7,7 +7,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Log;
 
 import com.google.common.base.Function;
 
@@ -53,7 +52,7 @@ public class ImageSelector {
                         path = move_or_copy_image(path);
 
                         ImageData imageData = new ImageData(++lastImageNumber, path, noteModel);
-                        imageData.saveImageDataToDB();
+                        imageData.save();
 
                     }
                 }else if(intent.getData() != null) {
@@ -62,7 +61,7 @@ public class ImageSelector {
                     String path = move_or_copy_image(imagePath);
 
                     ImageData imageData = new ImageData(++lastImageNumber, path, noteModel);
-                    imageData.saveImageDataToDB();
+                    imageData.save();
                 }
                 activity.runOnUiThread(() -> {
                     postCallback.apply(null);

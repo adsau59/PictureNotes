@@ -45,6 +45,7 @@ public class ImageData {
     @Generated(hash = 1056330060)
     private transient Long note__resolvedKey;
 
+    //region custom constructor
     public ImageData(int number, String url, NoteModel noteModel){
         this(number, url, null, noteModel);
     }
@@ -55,24 +56,9 @@ public class ImageData {
         this.name = name;
         setNote(noteModel);
     }
+    //endregion
 
-
-
-    @Generated(hash = 950102263)
-    public ImageData() {
-    }
-
-
-
-    @Generated(hash = 376669339)
-    public ImageData(Long id, String name, String url, int number, Long nodeId) {
-        this.id = id;
-        this.name = name;
-        this.url = url;
-        this.number = number;
-        this.nodeId = nodeId;
-    }
-
+    //region GetSet
     public void setNumber(int number) {
         this.number = number;
     }
@@ -111,31 +97,37 @@ public class ImageData {
         return this.selected;
     }
 
+    public void setNodeId(Long nodeId) {
+        this.nodeId = nodeId;
+    }
+    //endregion
 
-
+    //region methods
     public static ImageDataDao GetDao()
     {
         return MainActivity.GetDaoSession().getImageDataDao();
     }
 
-    public void updateImageToDB(Context context){
-        GetDao().update(this);
-    }
-
-    public  void changeCode(Context context, String code){
-    }
-
-    public void deleteImageFromDB(Context context){
-        GetDao().delete(this);
-    }
-
-    public void saveImageDataToDB(){
+    public void save(){
         GetDao().save(this);
     }
+    //endregion
 
-    public static List<ImageData> getImagesFromCode(Context context, String code){
-        return null;
+    //region dao generated
+
+    @Generated(hash = 950102263)
+    public ImageData() {
     }
+
+    @Generated(hash = 376669339)
+    public ImageData(Long id, String name, String url, int number, Long nodeId) {
+        this.id = id;
+        this.name = name;
+        this.url = url;
+        this.number = number;
+        this.nodeId = nodeId;
+    }
+
     /**
      * Convenient call for {@link org.greenrobot.greendao.AbstractDao#delete(Object)}.
      * Entity must attached to an entity context.
@@ -176,14 +168,6 @@ public class ImageData {
         return this.nodeId;
     }
 
-
-
-    public void setNodeId(Long nodeId) {
-        this.nodeId = nodeId;
-    }
-
-
-
     /** To-one relationship, resolved on first access. */
     @Generated(hash = 489069693)
     public NoteModel getNote() {
@@ -203,8 +187,6 @@ public class ImageData {
         return note;
     }
 
-
-
     /** called by internal mechanisms, do not call yourself. */
     @Generated(hash = 919884059)
     public void setNote(NoteModel note) {
@@ -214,8 +196,6 @@ public class ImageData {
             note__resolvedKey = nodeId;
         }
     }
-
-
 
     public void setSelected(boolean selected) {
         this.selected = selected;
@@ -227,4 +207,6 @@ public class ImageData {
         this.daoSession = daoSession;
         myDao = daoSession != null ? daoSession.getImageDataDao() : null;
     }
+
+    //endregion
 }

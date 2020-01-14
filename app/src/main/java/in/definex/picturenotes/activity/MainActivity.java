@@ -8,7 +8,6 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -578,11 +577,11 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
 
                 String dsc = jsonObject.getString("description");
 
-                if(NoteModel.isCodeInDB(context, code))
+                if(NoteModel.DoesCodeExists(code))
                     return false;
 
                 NoteModel noteModel = new NoteModel(code, dsc, false);
-                noteModel.saveNoteInDB(context);
+                noteModel.saveNoteInDB();
 
                 JSONArray jsonArray = jsonObject.getJSONArray("imageDatas");
                 for(int i=0; i<jsonArray.length(); i++){
@@ -599,7 +598,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     fos.flush();
                     fos.close();
 
-                    new ImageData(imageDataJson.getInt("number"), imageUrl, imageDataJson.getString("name"), noteModel).saveImageDataToDB();
+                    new ImageData(imageDataJson.getInt("number"), imageUrl, imageDataJson.getString("name"), noteModel).save();
                 }
             } catch (Exception e) {
                 e.printStackTrace();

@@ -35,7 +35,6 @@ import in.definex.picturenotes.util.ImageLoader;
 import in.definex.picturenotes.models.NoteModel;
 import in.definex.picturenotes.R;
 import in.definex.picturenotes.activity.ShowImageActivity;
-import in.definex.picturenotes.database.DbService;
 import in.definex.picturenotes.util.UtilityFunctions;
 
 /**
@@ -280,7 +279,7 @@ public class ShowImageRecyclerAdapter extends RecyclerView.Adapter<ShowImageRecy
 
                                 if(newName.length()<=10){
                                     imageDatas.get(pos).setName(newName);
-                                    imageDatas.get(pos).updateImageToDB(context);
+                                    imageDatas.get(pos).update();
                                     textView.setText(newName);
                                 }else{
                                     Toast.makeText(context, R.string.max_10_characters, Toast.LENGTH_SHORT).show();
@@ -310,7 +309,7 @@ public class ShowImageRecyclerAdapter extends RecyclerView.Adapter<ShowImageRecy
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 //delete image from db
-                                imageDatas.get(pos).deleteImageFromDB(context);
+                                imageDatas.get(pos).delete();
                                 noteModel.cachedShareNoteDisturbed(context);
                                 UtilityFunctions.setFavDisturbed(context, true);
                                 if(((CheckBox)v1.findViewById(R.id.deleteImagesCheckBox)).isChecked())
@@ -319,16 +318,10 @@ public class ShowImageRecyclerAdapter extends RecyclerView.Adapter<ShowImageRecy
                                 imageDatas.remove(pos);
 
                                 //adjust numbers of others
-                                for(int i=0, num=1; i<imageDatas.size(); i++,num++)
+                                for(int i=0, num=1; i<imageDatas.size(); i++,num++) {
                                     imageDatas.get(i).setNumber(num);
-
-                                new Thread(){
-                                    @Override
-                                    public void run() {
-                                        DbService.updateAllImages(context, imageDatas);
-                                    }
-                                }.start();
-
+                                    imageDatas.get(i).update();
+                                }
                                 //dismiss and refresh view
                                 updateData(imageDatas);
                                 notifyDataSetChanged();

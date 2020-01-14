@@ -66,7 +66,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -76,7 +75,6 @@ import in.definex.picturenotes.Adapters.ShowImageRecyclerAdapter;
 import in.definex.picturenotes.models.ImageData;
 import in.definex.picturenotes.models.NoteModel;
 import in.definex.picturenotes.R;
-import in.definex.picturenotes.database.DbService;
 import in.definex.picturenotes.util.DEFINE;
 import in.definex.picturenotes.util.GooglePlayManager;
 import in.definex.picturenotes.util.ImageSelector;
@@ -112,7 +110,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
         Log.d("code", code);
         //get note from db
-        noteModel = NoteModel.getNoteByCode(this, code);
+        noteModel = NoteModel.GetNoteByCode(code);
 
         favOff = UtilityFunctions.makeIcon(this, "\uf006",20);
         favOn = UtilityFunctions.makeIcon(this, "\uf005",20);
@@ -196,7 +194,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
                         case 5:
                             sv.hide();
-                            noteModel.deleteNoteAndImagesFromDB(context);
+                            noteModel.deleteNoteAndImagesFromDB();
                             finish();
                             break;
                     }
@@ -256,7 +254,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                                     return;
                                 }
 
-                                if(!newCode.equals(noteModel.getCode()) && NoteModel.isCodeInDB(context, newCode)){
+                                if(!newCode.equals(noteModel.getCode()) && NoteModel.DoesCodeExists(newCode)){
                                     Toast.makeText(context, R.string.code_must_be_unique, Toast.LENGTH_LONG).show();
                                     return;
                                 }
@@ -277,7 +275,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                                 noteModel.setDescription(newDesc);
 
                                 if(!newCode.equals(noteModel.getCode()))
-                                    noteModel = noteModel.changeCodeAndSaveToDB(context, newCode);
+                                    noteModel = noteModel.changeCodeAndSaveToDB(newCode);
 
                                 code = noteModel.getCode();
                                 update_code_and_desc_view();
@@ -309,7 +307,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
     ShowImageRecyclerAdapter adapter;
     //NOTEME load Image
     private void loadImageLvFromDb(){
-        List<ImageData> imageDatas = NoteModel.getNoteByCode(this, code).getImageDatas();
+        List<ImageData> imageDatas = NoteModel.GetNoteByCode(code).getImageDatas();
         lastImageNumber = imageDatas.size() !=0 ?imageDatas.get(imageDatas.size()-1).getNumber():0;
 
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recyclerview);
@@ -405,7 +403,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                 new Thread(){
                     @Override
                     public void run() {
-                        DbService.updateAllImages(context, adapter.imageDatas);
+                        NoteModel.GetNoteByCode(code).updateAllImages();
                     }
                 }.start();
 
@@ -440,7 +438,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
             noteModel.cachedShareNoteDisturbed(this);
             UtilityFunctions.setFavDisturbed(this, true);
 
-            List<ImageData> imageDatas = ImageData.getImagesFromCode(this,code);
+            List<ImageData> imageDatas = NoteModel.GetNoteByCode(code).getImageDatas();
             adapter.updateListData(imageDatas);
             return null;
         });
@@ -462,7 +460,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
     //NOTEME WHEN CALLED CHANGES FAV IN DB THEN CHANGES ICON
     private void updateFavStatus(boolean fav){
-        noteModel.updateFavStatusInDB(this, fav);
+        noteModel.updateFavStatusInDB(fav);
         requestUpdateFavView();
         changeFavIcon(fav);
     }
@@ -583,7 +581,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                                         if(deleteFile)
                                             UtilityFunctions.deleteImage(c,selectedImages.get(i).getUrl());
 
-                                        selectedImages.get(i).deleteImageFromDB(c);
+                                        selectedImages.get(i).delete();
 
 
                                         adapter.imageDatas.remove(selectedImages.get(i));
@@ -595,7 +593,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
                                     new Thread(){
                                         @Override
                                         public void run() {
-                                            DbService.updateAllImages(c, adapter.imageDatas);
+                                            NoteModel.GetNoteByCode(code).updateAllImages();
                                         }
                                     }.start();
 
@@ -684,7 +682,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
 
                                 requestUpdateFavView();
 
-                                noteModel.deleteNoteAndImagesFromDB(c);
+                                noteModel.deleteNoteAndImagesFromDB();
                                 finish();
 
 
