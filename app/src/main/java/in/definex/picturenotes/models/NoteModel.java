@@ -7,12 +7,14 @@ import org.greenrobot.greendao.annotation.Entity;
 import org.greenrobot.greendao.annotation.Id;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import in.definex.picturenotes.activity.MainActivity;
 import in.definex.picturenotes.database.DbService;
 
 import org.greenrobot.greendao.annotation.Generated;
+import org.greenrobot.greendao.annotation.NotNull;
 import org.greenrobot.greendao.annotation.ToMany;
 import org.greenrobot.greendao.DaoException;
 
@@ -23,8 +25,8 @@ import org.greenrobot.greendao.DaoException;
 @Entity
 public class NoteModel {
 
-    @Id
-    private int id;
+    @Id(autoincrement = true)
+    private Long id;
 
     private String code;
     private String description;
@@ -32,7 +34,7 @@ public class NoteModel {
     private String readonly;
     private String password;
 
-    @ToMany(referencedJoinProperty = "id")
+    @ToMany(referencedJoinProperty = "nodeId")
     private List<ImageData> imageDatas;
 
     /** Used to resolve relations */
@@ -65,19 +67,19 @@ public class NoteModel {
     }
 
 
-    @Generated(hash = 33309656)
-    public NoteModel(int id, String code, String description, boolean isFav, String readonly, String password) {
+    @Generated(hash = 1532285157)
+    public NoteModel() {
+    }
+
+
+    @Generated(hash = 827459215)
+    public NoteModel(Long id, String code, String description, boolean isFav, String readonly, String password) {
         this.id = id;
         this.code = code;
         this.description = description;
         this.isFav = isFav;
         this.readonly = readonly;
         this.password = password;
-    }
-
-
-    @Generated(hash = 1532285157)
-    public NoteModel() {
     }
 
     public String getCode() {
@@ -102,15 +104,6 @@ public class NoteModel {
 
     public void setCode(String code) {
         this.code = code;
-    }
-
-    public int getId() {
-        return this.id;
-    }
-
-
-    public void setId(int id) {
-        this.id = id;
     }
 
 
@@ -143,46 +136,39 @@ public class NoteModel {
         this.password = password;
     }
 
-
-
-
+    public static NoteModelDao GetDao()
+    {
+        return MainActivity.GetDaoSession().getNoteModelDao();
+    }
 
     public void updateFavStatusInDB(Context context, boolean fav){
         this.isFav = fav;
-        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
-        daoSession.getNoteModelDao().update(this);
+        GetDao().update(this);
     }
 
     public void updateNoteDb(Context context){
-        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
-        daoSession.getNoteModelDao().update(this);
+        GetDao().update(this);
     }
 
     public static NoteModel getNoteByCode(Context context, String code){
-
-        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
-        return daoSession.getNoteModelDao().queryBuilder().where(NoteModelDao.Properties.Code.eq(code)).build().unique();
+        return GetDao().queryBuilder().where(NoteModelDao.Properties.Code.eq(code)).build().unique();
 
     }
 
     public void saveNoteInDB(Context context){
-        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
-        daoSession.getNoteModelDao().save(this);
+        GetDao().save(this);
     }
 
     public static boolean isCodeInDB(Context context, String code){
-        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
-        return daoSession.getNoteModelDao().queryBuilder().where(NoteModelDao.Properties.Code.eq(code)).build().unique() != null;
+        return GetDao().queryBuilder().where(NoteModelDao.Properties.Code.eq(code)).build().unique() != null;
     }
 
     public static List<NoteModel> getFavNotesFromDB(Context context){
-        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
-        return daoSession.getNoteModelDao().queryBuilder().where(NoteModelDao.Properties.IsFav.eq(true)).build().list();
+        return GetDao().queryBuilder().where(NoteModelDao.Properties.IsFav.eq(true)).build().list();
     }
 
     public static List<NoteModel> getAllNotes(Context context){
-        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
-        return daoSession.getNoteModelDao().loadAll();
+        return GetDao().loadAll();
     }
 
     public void cacheSharedNote(Context context,String fileId){
@@ -208,8 +194,7 @@ public class NoteModel {
 
     public static String[] getAllCodes(Context context){
 
-        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
-        List<NoteModel> notes = daoSession.getNoteModelDao().loadAll();
+        List<NoteModel> notes = GetDao().loadAll();
 
         List<String> codes = new ArrayList<>();
         for(NoteModel n: notes)
@@ -220,7 +205,7 @@ public class NoteModel {
 
 
     public void deleteNoteAndImagesFromDB(Context c){
-        DaoSession daoSession = ((MainActivity) c.getApplicationContext()).getDaoSession();
+        DaoSession daoSession = MainActivity.GetDaoSession();
 
         //delete images
         for(ImageData i: imageDatas)
@@ -234,29 +219,6 @@ public class NoteModel {
         this.code = newCode;
         updateNoteDb(context);
         return this;
-    }
-
-
-    /**
-     * To-many relationship, resolved on first access (and after reset).
-     * Changes to to-many relations are not persisted, make changes to the target entity.
-     */
-    @Generated(hash = 834232635)
-    public List<ImageData> getImageDatas() {
-        if (imageDatas == null) {
-            final DaoSession daoSession = this.daoSession;
-            if (daoSession == null) {
-                throw new DaoException("Entity is detached from DAO context");
-            }
-            ImageDataDao targetDao = daoSession.getImageDataDao();
-            List<ImageData> imageDatasNew = targetDao._queryNoteModel_ImageDatas(id);
-            synchronized (this) {
-                if (imageDatas == null) {
-                    imageDatas = imageDatasNew;
-                }
-            }
-        }
-        return imageDatas;
     }
 
 
@@ -303,6 +265,39 @@ public class NoteModel {
             throw new DaoException("Entity is detached from DAO context");
         }
         myDao.update(this);
+    }
+
+
+    public Long getId() {
+        return this.id;
+    }
+
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+
+    /**
+     * To-many relationship, resolved on first access (and after reset).
+     * Changes to to-many relations are not persisted, make changes to the target entity.
+     */
+    @Generated(hash = 834232635)
+    public List<ImageData> getImageDatas() {
+        if (imageDatas == null) {
+            final DaoSession daoSession = this.daoSession;
+            if (daoSession == null) {
+                throw new DaoException("Entity is detached from DAO context");
+            }
+            ImageDataDao targetDao = daoSession.getImageDataDao();
+            List<ImageData> imageDatasNew = targetDao._queryNoteModel_ImageDatas(id);
+            synchronized (this) {
+                if (imageDatas == null) {
+                    imageDatas = imageDatasNew;
+                }
+            }
+        }
+        return imageDatas;
     }
 
 

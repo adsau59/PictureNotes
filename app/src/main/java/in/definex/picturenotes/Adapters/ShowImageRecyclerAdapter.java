@@ -130,12 +130,7 @@ public class ShowImageRecyclerAdapter extends RecyclerView.Adapter<ShowImageRecy
 
         holder.checkBox.setChecked(imageDatas.get(pos).isSelected());
 
-        holder.checkBox.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                imageDatas.get(pos).setSelected(holder.checkBox.isChecked());
-            }
-        });
+        holder.checkBox.setOnClickListener(v -> imageDatas.get(pos).setSelected(holder.checkBox.isChecked()));
 
         if(holder.imageView != null) {
             holder.imageView.setImageBitmap(defaultBitmap);

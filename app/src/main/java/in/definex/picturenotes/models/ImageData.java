@@ -1,20 +1,15 @@
 package in.definex.picturenotes.models;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 
 import org.greenrobot.greendao.annotation.Entity;
 import org.greenrobot.greendao.annotation.Id;
-import org.greenrobot.greendao.annotation.Index;
 import org.greenrobot.greendao.annotation.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import in.definex.picturenotes.activity.MainActivity;
-import in.definex.picturenotes.database.ImageDBHelper;
+
 import org.greenrobot.greendao.annotation.Generated;
 import org.greenrobot.greendao.annotation.ToOne;
 import org.greenrobot.greendao.DaoException;
@@ -25,16 +20,16 @@ import org.greenrobot.greendao.DaoException;
 @Entity
 public class ImageData {
 
-    @Id
-    private int id;
+    @Id(autoincrement = true)
+    private Long id;
 
     private String name;
     private String url;
     private int number;
 
-    private Boolean selected;
+    private transient boolean selected;
 
-    private int nodeId;
+    private Long nodeId;
 
     @ToOne(joinProperty = "nodeId")
     private NoteModel note;
@@ -47,34 +42,35 @@ public class ImageData {
     @Generated(hash = 1781744822)
     private transient ImageDataDao myDao;
 
-    @Generated(hash = 2139518147)
-    private transient Integer note__resolvedKey;
+    @Generated(hash = 1056330060)
+    private transient Long note__resolvedKey;
 
-    public ImageData(int number, String url) {
-        this(-1, number, url, "Image");
-    }
-    public ImageData(int number, String url, String name) {
-        this(-1, number, url, name);
+    public ImageData(int number, String url, NoteModel noteModel){
+        this(number, url, null, noteModel);
     }
 
-    public ImageData(int id, int number, String url, String name) {
-        this.id = id;
+    public ImageData(int number, String url, String name, NoteModel noteModel){
         this.number = number;
         this.url = url;
         this.name = name;
-        selected = false;
+        setNote(noteModel);
     }
-    @Generated(hash = 1558377871)
-    public ImageData(int id, String name, String url, int number, Boolean selected, int nodeId) {
-        this.id = id;
-        this.name = name;
-        this.url = url;
-        this.number = number;
-        this.selected = selected;
-        this.nodeId = nodeId;
-    }
+
+
+
     @Generated(hash = 950102263)
     public ImageData() {
+    }
+
+
+
+    @Generated(hash = 376669339)
+    public ImageData(Long id, String name, String url, int number, Long nodeId) {
+        this.id = id;
+        this.name = name;
+        this.url = url;
+        this.number = number;
+        this.nodeId = nodeId;
     }
 
     public void setNumber(int number) {
@@ -85,7 +81,7 @@ public class ImageData {
         return number;
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
@@ -108,10 +104,6 @@ public class ImageData {
     public void setName(String name) {
         this.name = name;
     }
-
-    public void setId(int id) {
-        this.id = id;
-    }
     public void setUrl(String url) {
         this.url = url;
     }
@@ -121,64 +113,28 @@ public class ImageData {
 
 
 
+    public static ImageDataDao GetDao()
+    {
+        return MainActivity.GetDaoSession().getImageDataDao();
+    }
 
     public void updateImageToDB(Context context){
-        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
-        daoSession.getImageDataDao().update(this);
+        GetDao().update(this);
     }
 
     public  void changeCode(Context context, String code){
     }
 
     public void deleteImageFromDB(Context context){
-        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
-        daoSession.getImageDataDao().delete(this);
+        GetDao().delete(this);
     }
 
-    public void saveImageDataToDB(Context context, String code){
-        DaoSession daoSession = ((MainActivity) context.getApplicationContext()).getDaoSession();
-        daoSession.getImageDataDao().save(this);
+    public void saveImageDataToDB(){
+        GetDao().save(this);
     }
 
     public static List<ImageData> getImagesFromCode(Context context, String code){
         return null;
-    }
-    public int getNodeId() {
-        return this.nodeId;
-    }
-    public void setNodeId(int nodeId) {
-        this.nodeId = nodeId;
-    }
-    /** To-one relationship, resolved on first access. */
-    @Generated(hash = 579068990)
-    public NoteModel getNote() {
-        int __key = this.nodeId;
-        if (note__resolvedKey == null || !note__resolvedKey.equals(__key)) {
-            final DaoSession daoSession = this.daoSession;
-            if (daoSession == null) {
-                throw new DaoException("Entity is detached from DAO context");
-            }
-            NoteModelDao targetDao = daoSession.getNoteModelDao();
-            NoteModel noteNew = targetDao.load(__key);
-            synchronized (this) {
-                note = noteNew;
-                note__resolvedKey = __key;
-            }
-        }
-        return note;
-    }
-    /** called by internal mechanisms, do not call yourself. */
-    @Generated(hash = 1518509770)
-    public void setNote(@NotNull NoteModel note) {
-        if (note == null) {
-            throw new DaoException(
-                    "To-one property 'nodeId' has not-null constraint; cannot set to-one to null");
-        }
-        synchronized (this) {
-            this.note = note;
-            nodeId = note.getId();
-            note__resolvedKey = nodeId;
-        }
     }
     /**
      * Convenient call for {@link org.greenrobot.greendao.AbstractDao#delete(Object)}.
@@ -213,6 +169,58 @@ public class ImageData {
         }
         myDao.update(this);
     }
+    public void setId(Long id) {
+        this.id = id;
+    }
+    public Long getNodeId() {
+        return this.nodeId;
+    }
+
+
+
+    public void setNodeId(Long nodeId) {
+        this.nodeId = nodeId;
+    }
+
+
+
+    /** To-one relationship, resolved on first access. */
+    @Generated(hash = 489069693)
+    public NoteModel getNote() {
+        Long __key = this.nodeId;
+        if (note__resolvedKey == null || !note__resolvedKey.equals(__key)) {
+            final DaoSession daoSession = this.daoSession;
+            if (daoSession == null) {
+                throw new DaoException("Entity is detached from DAO context");
+            }
+            NoteModelDao targetDao = daoSession.getNoteModelDao();
+            NoteModel noteNew = targetDao.load(__key);
+            synchronized (this) {
+                note = noteNew;
+                note__resolvedKey = __key;
+            }
+        }
+        return note;
+    }
+
+
+
+    /** called by internal mechanisms, do not call yourself. */
+    @Generated(hash = 919884059)
+    public void setNote(NoteModel note) {
+        synchronized (this) {
+            this.note = note;
+            nodeId = note == null ? null : note.getId();
+            note__resolvedKey = nodeId;
+        }
+    }
+
+
+
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+    }
+
     /** called by internal mechanisms, do not call yourself. */
     @Generated(hash = 2025839145)
     public void __setDaoSession(DaoSession daoSession) {

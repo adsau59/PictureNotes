@@ -232,13 +232,7 @@ public class CreateNoteActivity extends AppCompatActivity {
             return;
 
         noteModel.saveNoteInDB(this);
-
-        final ProgressDialog progressDialog = new ProgressDialog(this);
-        progressDialog.setTitle(R.string.loading_please_wait);
-        progressDialog.show();
-
-        imageSelector.HandleCallback(intent, (o)->{
-            progressDialog.dismiss();
+        imageSelector.HandleCallback(intent, noteModel, (o)->{
             openNote(code);
             return null;
         });

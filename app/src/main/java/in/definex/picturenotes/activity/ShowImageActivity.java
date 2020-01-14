@@ -436,7 +436,7 @@ public class ShowImageActivity extends AppCompatActivity implements EasyPermissi
         if(requestCode != DEFINE.GALLERY_CODE && resultCode != Activity.RESULT_OK)
             return;
 
-        imageSelector.HandleCallback(data, (o)->{
+        imageSelector.HandleCallback(data, noteModel, (o)->{
             noteModel.cachedShareNoteDisturbed(this);
             UtilityFunctions.setFavDisturbed(this, true);
 

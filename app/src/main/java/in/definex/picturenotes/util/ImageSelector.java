@@ -15,6 +15,7 @@ import java.io.File;
 
 import in.definex.picturenotes.R;
 import in.definex.picturenotes.models.ImageData;
+import in.definex.picturenotes.models.NoteModel;
 
 public class ImageSelector {
 
@@ -36,7 +37,7 @@ public class ImageSelector {
         activity.startActivityForResult(Intent.createChooser(intent,activity.getResources().getString(R.string.select_images)), DEFINE.GALLERY_CODE);
     }
 
-    public void HandleCallback(final Intent intent, final Function postCallback)
+    public void HandleCallback(final Intent intent,final NoteModel noteModel, final Function postCallback)
     {
         final ClipData data = intent.getClipData();
 
@@ -50,15 +51,18 @@ public class ImageSelector {
 
                         String path = get_image_path_from_uri(data.getItemAt(i).getUri());
                         path = move_or_copy_image(path);
-                        new ImageData(++lastImageNumber, path).saveImageDataToDB(activity, code);
+
+                        ImageData imageData = new ImageData(++lastImageNumber, path, noteModel);
+                        imageData.saveImageDataToDB();
 
                     }
                 }else if(intent.getData() != null) {
 
                     String imagePath = get_image_path_from_uri(intent.getData());
                     String path = move_or_copy_image(imagePath);
-                    new ImageData(++lastImageNumber, path).saveImageDataToDB(activity, code);
 
+                    ImageData imageData = new ImageData(++lastImageNumber, path, noteModel);
+                    imageData.saveImageDataToDB();
                 }
                 activity.runOnUiThread(() -> {
                     postCallback.apply(null);

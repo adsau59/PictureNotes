@@ -90,7 +90,7 @@ import static in.definex.picturenotes.util.GooglePlayManager.REQUEST_PERMISSION_
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks, GooglePlayManager.ChooseAccount{
 
     GooglePlayManager gpm;
-    private DaoSession daoSession;
+    private static DaoSession daoSession;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -242,7 +242,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     }
 
     //dao
-    public DaoSession getDaoSession() {
+    public static DaoSession GetDaoSession() {
         return daoSession;
     }
 
@@ -599,7 +599,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                     fos.flush();
                     fos.close();
 
-                    new ImageData(imageDataJson.getInt("number"), imageUrl, imageDataJson.getString("name")).saveImageDataToDB(context, code);
+                    new ImageData(imageDataJson.getInt("number"), imageUrl, imageDataJson.getString("name"), noteModel).saveImageDataToDB();
                 }
             } catch (Exception e) {
                 e.printStackTrace();

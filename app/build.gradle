@@ -29,6 +29,10 @@ repositories {
     jcenter()
 }
 
+greendao {
+    schemaVersion 2
+    // daoPackage "com.example.model" // set package of generated classes
+}
 
 dependencies {
 
