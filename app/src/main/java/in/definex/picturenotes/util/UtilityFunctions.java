@@ -172,60 +172,36 @@ public class UtilityFunctions {
 
 
         RequestQueue queue = Volley.newRequestQueue(context);
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                try {
-                    Log.d("Response",response);
-                    final JSONObject jsonObject = new JSONObject(response);
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url, response -> {
+            try {
+                Log.d("Response",response);
+                final JSONObject jsonObject = new JSONObject(response);
 
-                    if(jsonObject.getInt("status")==200){
-                        if(jsonObject.getInt("alert") == 1){
-                            AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                            builder.setTitle(jsonObject.getString("title"))
-                                    .setMessage(jsonObject.getString("message"))
-                                    .setPositiveButton(jsonObject.getString("positive_text:"), new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            try {
-                                                switch (jsonObject.getString("positive_action")){
-                                                    case "nothing":
-                                                        break;
-                                                    case "openPlayStore":
-                                                        final String appPackageName = context.getPackageName(); // getPackageName() from Context or Activity object
-                                                        try {
-                                                            context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
-                                                        }
-                                                        catch (android.content.ActivityNotFoundException anfe) {
-                                                            context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id=" + appPackageName)));
-                                                        }
-                                                        break;
+                if(jsonObject.getInt("status")==200){
+                    if(jsonObject.getInt("alert") == 1){
+                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                        builder.setTitle(jsonObject.getString("title"))
+                                .setMessage(jsonObject.getString("message"))
+                                .setPositiveButton(jsonObject.getString("positive_text:"), (dialogInterface, i) -> {
+                                    try {
+                                        switch (jsonObject.getString("positive_action")){
+                                            case "nothing":
+                                                break;
+                                            case "openPlayStore":
+                                                final String appPackageName = context.getPackageName(); // getPackageName() from Context or Activity object
+                                                try {
+                                                    context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
                                                 }
-                                            } catch (JSONException e) {
-                                                e.printStackTrace();
-                                            }
-                                        }
-                                    })
-                                    .setNegativeButton(jsonObject.getString("negative_text"), new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface, int i) {
-                                            try {
-                                                switch (jsonObject.getString("positive_action")){
-                                                    case "nothing":
-                                                        break;
-                                                    case "closeApp":
-                                                        System.exit(0);
-                                                        break;
+                                                catch (android.content.ActivityNotFoundException anfe) {
+                                                    context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id=" + appPackageName)));
                                                 }
-                                            } catch (JSONException e) {
-                                                e.printStackTrace();
-                                            }
+                                                break;
                                         }
-                                    });
-
-                            builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                @Override
-                                public void onDismiss(DialogInterface dialogInterface) {
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                })
+                                .setNegativeButton(jsonObject.getString("negative_text"), (dialogInterface, i) -> {
                                     try {
                                         switch (jsonObject.getString("positive_action")){
                                             case "nothing":
@@ -237,27 +213,36 @@ public class UtilityFunctions {
                                     } catch (JSONException e) {
                                         e.printStackTrace();
                                     }
+                                });
+
+                        builder.setOnDismissListener(dialogInterface -> {
+                            try {
+                                switch (jsonObject.getString("positive_action")){
+                                    case "nothing":
+                                        break;
+                                    case "closeApp":
+                                        System.exit(0);
+                                        break;
                                 }
-                            });
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        });
 
-                            builder.show();
-                        }
+                        builder.show();
                     }
-
-                    String string = jsonObject.getString("echo");
-
-                    if(string==null || !string.isEmpty())
-                        Toast.makeText(context, string, Toast.LENGTH_LONG).show();
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
                 }
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
 
+                String string = jsonObject.getString("echo");
+
+                if(string==null || !string.isEmpty())
+                    Toast.makeText(context, string, Toast.LENGTH_LONG).show();
+
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
+        }, error -> {
+
         });
 
         queue.add(stringRequest);

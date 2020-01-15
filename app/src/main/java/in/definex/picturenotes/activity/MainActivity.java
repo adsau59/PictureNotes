@@ -66,7 +66,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 import in.definex.picturenotes.Adapters.BackupRecyclerAdapter;
 import in.definex.picturenotes.Adapters.FavouriteRecyclerAdapter;
@@ -87,33 +86,81 @@ import static in.definex.picturenotes.util.GooglePlayManager.REQUEST_PERMISSION_
 
 public class MainActivity extends AppCompatActivity implements EasyPermissions.PermissionCallbacks, GooglePlayManager.ChooseAccount{
 
-    GooglePlayManager gpm;
     private static DaoSession daoSession;
+
+    private GooglePlayManager gpm;
+    private ShowcaseView sv;
+    private ProgressDialog mDownloadProgress;
+
+    private boolean backPressedOnce=false;
+    private boolean downloadComplete = true;
+
+
+    final int FILE_REQUEST_CODE = 5684;
+    final int READ_REQUEST_CODE_FOR_IMPORT = 5673;
+    final int SHOW_DOWNLOAD_PROGRESS_REQUEST_CODE = 4135;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        final Activity c = this;
 
-        //dao
+        //dao initialization
         DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(this, "picturenotes-db");
         Database db = helper.getWritableDb();
         daoSession = new DaoMaster(db).newSession();
 
-        setContentView(R.layout.activity_main);
-
+        //set action bar
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        if(!UtilityFunctions.getPermisionCompleteStatus(this)){
+        //ask for permissions
+        if (!UtilityFunctions.getPermisionCompleteStatus(this)) {
             Intent intent = new Intent(this, PermisionAskingActivity.class);
             startActivity(intent);
         }
 
-        UtilityFunctions.checkNews(this);
+        //action button: start create note activity
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setImageDrawable(UtilityFunctions.makeIcon(this,"\uF067"));
+        fab.setOnClickListener(view -> {
+            Intent intent = new Intent(c, CreateNoteActivity.class);
+            startActivity(intent);
+            sv.hide();
+        });
 
-        final Activity c = this;
+        //gpm initialization
+        gpm = new GooglePlayManager(c, this);
+        gpm.mCredential = GoogleAccountCredential.usingOAuth2(
+                getApplicationContext(), Arrays.asList(GooglePlayManager.SCOPES))
+                .setBackOff(new ExponentialBackOff());
 
+        //find button initialization
+        findViewById(R.id.see_note).setOnClickListener(v -> {
+            String code = ((EditText)findViewById(R.id.editText)).getText().toString().toLowerCase();
+
+            if(code.isEmpty()){
+                Toast.makeText(c, R.string.enter_code_to_search, Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            Intent intent = new Intent(c, ShowImageActivity.class);
+            intent.putExtra("code", code);
+            startActivity(intent);
+        });
+
+        //initialize favourite list
+        setFavList();
+
+        //when tapped on .pnd
+        checkForIntent();
+
+
+        //todo move to separate tutorial class
         ViewTarget target = new ViewTarget(R.id.fab, this);
         sv = new ShowcaseView.Builder(this)
                 .withMaterialShowcase()
@@ -130,159 +177,19 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         int margin = ((Number) (getResources().getDisplayMetrics().density * 12)).intValue();
         lps.setMargins(margin, margin, margin, margin);
 
-        sv.overrideButtonClick(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sv.hide();
-                UtilityFunctions.setTutorialStatus(c,false);
-            }
+        sv.overrideButtonClick(v -> {
+            sv.hide();
+            UtilityFunctions.setTutorialStatus(c,false);
         });
         sv.setButtonText(getString(R.string.skip));
         sv.setButtonPosition(lps);
         sv.hide();
 
-            FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setImageDrawable(UtilityFunctions.makeIcon(this,"\uF067"));
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                Intent intent = new Intent(c, CreateNoteActivity.class);
-                startActivity(intent);
-                sv.hide();
-
-            }
-        });
-
-
-        //NOTEME FIND BUTTON
-        findViewById(R.id.see_note).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String code = ((EditText)findViewById(R.id.editText)).getText().toString().toLowerCase();
-
-                if(code.isEmpty()){
-                    Toast.makeText(c, R.string.enter_code_to_search, Toast.LENGTH_LONG).show();
-                    return;
-                }
-
-                Intent intent = new Intent(c, ShowImageActivity.class);
-                intent.putExtra("code", code);
-                startActivity(intent);
-            }
-        });
-
-        setFavList();
-
-
-
-
-
-        //NOTEME GPM INITIALIZATION
-        gpm = new GooglePlayManager(c, this);
-        gpm.mCredential = GoogleAccountCredential.usingOAuth2(
-                getApplicationContext(), Arrays.asList(GooglePlayManager.SCOPES))
-                .setBackOff(new ExponentialBackOff());
-
-        //when tapped on .pnd
-        checkForIntent();
-
-    }
-    ShowcaseView sv;
-
-    private void checkForIntent()   {
-        final Uri uri = getIntent().getData();
-
-        if(uri != null) {
-
-            if (uri.getPath().equals("/picturenotes")) {
-                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-                builder.setTitle(R.string.import_title)
-                        .setMessage(R.string.do_you_wish_to_imort_from_this_url)
-                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                gpm.setExecuteResult(new Callable<Void>() {
-                                    @Override
-                                    public Void call() throws Exception {
-                                        new UrlImporter(c,gpm.mCredential,uri.getQueryParameter("id")).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                                        return null;
-                                    }
-                                });
-                                gpm.getResultsFromApi();
-                            }
-                        })
-                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-
-                            }
-                        }).show();
-            } else {
-                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-                builder.setTitle(R.string.import_title)
-                        .setMessage(R.string.do_you_wish_to_import_this_file)
-                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                new fileImporter(c, uri).execute();
-                            }
-                        })
-                        .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-
-                            }
-                        }).show();
-
-            }
-        }
     }
 
-    //dao
-    public static DaoSession GetDaoSession() {
-        return daoSession;
-    }
-
-    //NOTEME GPM INTERFACE METHODS
-
-    @AfterPermissionGranted(REQUEST_PERMISSION_GET_ACCOUNTS)
-    public void chooseAccount() {
-        if (EasyPermissions.hasPermissions(
-                this, Manifest.permission.GET_ACCOUNTS)) {
-            String accountName = getSharedPreferences("prefs",Context.MODE_PRIVATE)
-                    .getString(PREF_ACCOUNT_NAME, null);
-            if (accountName != null) {
-                gpm.mCredential.setSelectedAccountName(accountName);
-                gpm.getResultsFromApi();
-            } else {
-                // Start a dialog from which the user can choose an account
-                startActivityForResult(
-                        gpm.mCredential.newChooseAccountIntent(),
-                        REQUEST_ACCOUNT_PICKER);
-            }
-        } else {
-            // Request the GET_ACCOUNTS permission via a user dialog
-            EasyPermissions.requestPermissions(
-                    this,
-                    getString(R.string.this_app_needs_to_access_your_google_account),
-                    REQUEST_PERMISSION_GET_ACCOUNTS,
-                    Manifest.permission.GET_ACCOUNTS);
-        }
-    }
-
-    @Override
-    public void onPermissionsGranted(int requestCode, List<String> list) {
-        // Do nothing.
-    }
-
-    @Override
-    public void onPermissionsDenied(int requestCode, List<String> list) {
-        // Do nothing.
-    }
-
-    //GPM INTERFACE METHOD END
-
+    /**
+     * Populate menu
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_activity_menu,menu);
@@ -295,46 +202,70 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         return super.onCreateOptionsMenu(menu);
     }
 
-    //GPM INTERFACE METHOD END
+    /**
+     * When focus is returned on the main activity,
+     *
+     */
+    @Override
+    protected void onResume() {
 
-    final int FILE_REQUEST_CODE = 5684;
-    final int READ_REQUEST_CODE_FOR_IMPORT = 5673;
+        //refresh the favourite list
+        if(UtilityFunctions.getFavDisturbed(this)) {
+            setFavList();
+            UtilityFunctions.setFavDisturbed(this, false);
+        }
+
+        //start the tutorial (its kept it in onresume just for reviewing tht tutorial settings)
+        if(UtilityFunctions.getTutorialStatus(this)) {
+            sv.show();
+        }
+
+        //reinitalize autocomplete search list
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_dropdown_item_1line, Note.getAllCodes());
+
+        AutoCompleteTextView textView = (AutoCompleteTextView)
+                findViewById(R.id.editText);
+        textView.setAdapter(adapter);
+
+        super.onResume();
+    }
+
+    /**
+     * Double back to exit
+     */
+    @Override
+    public void onBackPressed() {
+        if(backPressedOnce)
+            super.onBackPressed();
+        else{
+            Toast.makeText(this, R.string.press_back_again_to_exit, Toast.LENGTH_SHORT).show();
+            backPressedOnce = true;
+
+            new Thread(){
+                @Override
+                public void run() {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    backPressedOnce = false;
+                }
+            }.start();
+        }
+    }
+
+
+    /**
+     * Menu on click
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()){
             case R.id.importNote:
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                    permisionAsking(this, Manifest.permission.READ_EXTERNAL_STORAGE,READ_REQUEST_CODE_FOR_IMPORT);
-                }
-
-                CharSequence[] options = new CharSequence[]{getString(R.string.local), getString(R.string.from_drive)};
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle(R.string.from_where_you_would_like_to_import)
-                        .setItems(options, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                switch (which){
-                                    case 0:
-                                        askForFile();
-                                        return;
-                                    case 1:
-
-                                        //TODO START DRIVE STUFF
-                                        gpm.setExecuteResult(new Callable<Void>() {
-                                            @Override
-                                            public Void call() throws Exception {
-                                                new driveFolderSearcher(c,gpm.mCredential).execute();
-                                                return null;
-                                            }
-                                        });
-                                        gpm.getResultsFromApi();
-                                        return;
-                                }
-                            }
-                        });
-
-                builder.show();
+                start_import();
 
                 break;
 
@@ -351,64 +282,16 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         return true;
     }
 
-    private void askForFile(){
-        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-        i.setType("*/*");
-        startActivityForResult(i, FILE_REQUEST_CODE);
-    }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        switch (requestCode){
-            case FILE_REQUEST_CODE:
-                if(resultCode == RESULT_OK) {
-
-                    Uri uri = data.getData();
-
-                    new fileImporter(this,uri).execute();
-                }
-
-                break;
-        }
-
-        gpm.manageResults(requestCode,resultCode,data);
-    }
-
-
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
-
-        //NOTEME GPM METHOD
-        EasyPermissions.onRequestPermissionsResult(
-                requestCode, permissions, grantResults, this);
-
-        switch (requestCode) {
-            case READ_REQUEST_CODE_FOR_IMPORT: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    askForFile();
-                }
-            }
-            break;
-        }
-    }
-
-    FavouriteRecyclerAdapter adapter;
-    Context c;
+    /**
+     * Initializes the Favourite list
+     */
     private void setFavList(){
-        c = this;
-
+        final Context c = this;
         List<Note> notes = Note.getFavNotesFromDB();
-
         final RecyclerView recyclerView = (RecyclerView) findViewById(R.id.favRecycler);
 
-        //Log.d("size of fav", favList.size()+"");
-
-
-        adapter = new FavouriteRecyclerAdapter(c, notes){
+        FavouriteRecyclerAdapter adapter = new FavouriteRecyclerAdapter(c, notes) {
             @Override
             public void onItemClick(int pos) {
                 Intent intent = new Intent(c, ShowImageActivity.class);
@@ -421,247 +304,44 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
     }
 
-    boolean favoritesChanged = false;
+    //region backup and share system
 
-    @Override
-    protected void onResume() {
-        favoritesChanged = UtilityFunctions.getFavDisturbed(this);
+    /**
+     * Checks if the app is started using a link or a file,
+     * if so it starts the import action
+     */
+    private void checkForIntent()   {
+        final Uri uri = getIntent().getData();
 
-        if(favoritesChanged) {
-            setFavList();
-            favoritesChanged = false;
-            UtilityFunctions.setFavDisturbed(this, false);
-        }
+        if(uri != null) {
 
-
-
-        //tuts
-        if(UtilityFunctions.getTutorialStatus(this)) {
-            sv.show();
-        }
-
-
-
-        //autocomplete search
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-                android.R.layout.simple_dropdown_item_1line, Note.getAllCodes());
-
-        AutoCompleteTextView textView = (AutoCompleteTextView)
-                findViewById(R.id.editText);
-        textView.setAdapter(adapter);
-
-        super.onResume();
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-
-        setIntent(intent);
-
-        if(intent.getBooleanExtra("showDownloadProgress",false)){
-            if(!downloadComplete)
-                mDownloadProgress.show();
-        }else
-            checkForIntent();
-
-
-
-            //TODO THIS IS A HACK DONT USE THIS
-
-
-        super.onNewIntent(intent);
-
-    }
-
-    public static boolean permisionAsking(Activity c, String s){
-        return permisionAsking(c,s,123456);
-    }
-
-    public static boolean permisionAsking(Activity c, String s, int requestCode){
-        //REQUEST FOR PERMISION IF DOESNT HAVE
-        if(!(ContextCompat.checkSelfPermission(c, s) == PermissionChecker.PERMISSION_GRANTED))
-            ActivityCompat.requestPermissions(c, new String[]{s}, requestCode);
-
-        return ContextCompat.checkSelfPermission(c, s) == PermissionChecker.PERMISSION_GRANTED;
-    }
-
-
-    private class fileImporter extends AsyncTask<Void,String,Boolean>{
-
-        ProgressDialog dialog;
-        Uri uri;
-        Context context;
-        String jsonString = "";
-
-        fileImporter(Context context, Uri uri){
-            this.context = context;
-            this.uri = uri;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            dialog = ProgressDialog.show(MainActivity.this, "",
-                    getString(R.string.loading_please_wait), true);
-        }
-
-
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-
-            try {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(getContentResolver().openInputStream(uri)));
-
-                String content;
-                jsonString = "";
-                while((content = reader.readLine())!=null){
-                    jsonString += content;
-                }
-
-
-                return true;
-
-            }catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            return false;
-        }
-
-        @Override
-        protected void onPostExecute(Boolean success) {
-            dialog.dismiss();
-
-            new jsonToDB(jsonString,"",context).execute();
-
-
-
-        }
-    }
-
-    private class jsonToDB extends AsyncTask<Void, Void, Boolean>{
-        String importPath;
-        String jsonString;
-        String code;
-        Context context;
-
-        ProgressDialog mProgress;
-
-        public jsonToDB(String jsonString, String code, Context context){
-            importPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/PictureNotes/imports/";
-            this.jsonString = jsonString;
-            this.code = code;
-            this.context = context;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            mProgress = new ProgressDialog(context);
-            mProgress.setMessage(getString(R.string.unzipping_please_wait));
-            mProgress.show();
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            try{
-                JSONObject jsonObject = new JSONObject(jsonString);
-
-                if(code.isEmpty())
-                    code = jsonObject.getString("code");
-
-                String dsc = jsonObject.getString("description");
-
-                if(Note.DoesCodeExists(code))
-                    return false;
-
-                Note note = new Note(code, dsc, false);
-                note.saveNoteInDB();
-
-                JSONArray jsonArray = jsonObject.getJSONArray("imageDatas");
-                for(int i=0; i<jsonArray.length(); i++){
-                    JSONObject imageDataJson = jsonArray.getJSONObject(i);
-                    byte[] bytes = Base64.decode(imageDataJson.getString("image"),Base64.DEFAULT);
-                    String imageUrl = importPath+code+"/"+"image"+imageDataJson.getInt("number")+".jpg";
-                    File imageFile = new File(imageUrl);
-
-                    if(!imageFile.getParentFile().exists())
-                        imageFile.getParentFile().mkdirs();
-
-                    FileOutputStream fos = new FileOutputStream(imageFile);
-                    fos.write(bytes);
-                    fos.flush();
-                    fos.close();
-
-                    new ImageData(imageDataJson.getInt("number"), imageUrl, imageDataJson.getString("name"), note).save();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        protected void onPostExecute(Boolean success) {
-            mProgress.dismiss();
-
-            downloadComplete = true;
-
-            if(success) {
-                Toast.makeText(context, R.string.done_importing, Toast.LENGTH_LONG).show();
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                builder.setTitle("Note Imported")
-                        .setMessage("Do you wish to open it?")
-                        .setPositiveButton("Open", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                Intent intent = new Intent(context, ShowImageActivity.class);
-                                intent.putExtra("code", code);
-                                startActivity(intent);
-                            }
-                        }).setNegativeButton("No", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-
-                    }
-                });
-                builder.show();
-
-            }
-            else {
-                Toast.makeText(context, R.string.importing_failed, Toast.LENGTH_LONG).show();
-                AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                final EditText editText = new EditText(context);
-                editText.setHint(R.string.new_code);
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                lp.setMargins(100,10,100,10);
-                editText.setLayoutParams(lp);
-                builder.setTitle(getString(R.string.code_space)+code+getString(R.string.space_already_exists))
-                        .setView(editText)
-                        .setPositiveButton(R.string.submit, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                new jsonToDB(jsonString, editText.getText().toString().toLowerCase(), context).execute() ;
-                            }
+            if (uri.getPath().equals("/picturenotes")) {
+                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+                builder.setTitle(R.string.import_title)
+                        .setMessage(R.string.do_you_wish_to_imort_from_this_url)
+                        .setPositiveButton(R.string.yes, (dialog, which) -> {
+                            gpm.setExecuteResult(() -> {
+                                new UrlImporter(this,gpm.mCredential,uri.getQueryParameter("id")).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                                return null;
+                            });
+                            gpm.getResultsFromApi();
                         })
-                        .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
+                        .setNegativeButton("Cancel", null).show();
+            } else {
+                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+                builder.setTitle(R.string.import_title)
+                        .setMessage(R.string.do_you_wish_to_import_this_file)
+                        .setPositiveButton(R.string.yes, (dialog, which) -> new FileImporter(this, uri).execute())
+                        .setNegativeButton(R.string.cancel, null).show();
 
-                            }
-                        });
-                builder.show();
             }
         }
     }
 
-    final int SHOW_DOWNLOAD_PROGRESS_REQUEST_CODE = 4135;
-
-
-    ProgressDialog mDownloadProgress;
-    private boolean downloadComplete = true;
-    //NOTEME DOWNLOAD FROM DRIVE STUFF
+    /**
+     * Dowloads and loads the backup file from drive,
+     * then sends the jsonString to JsonToDB
+     */
     private class UrlImporter extends AsyncTask<Void,Integer,String>{
         Drive mService = null;
         Context context;
@@ -763,7 +443,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             mNotifyManager.notify(id, mBuilder.build());
 
             if(jsonString!=null)
-                new jsonToDB(jsonString, "", context).execute();
+                new JsonToDB(jsonString, "", context).execute();
         }
 
         @Override
@@ -847,14 +527,238 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         }
     }
 
-    private class driveFolderSearcher extends AsyncTask<Void, Void, FileList>{
+    /**
+     * Loads the file,
+     * then sends the jsonString to JsonToDB
+     */
+    private class FileImporter extends AsyncTask<Void,String,Boolean>{
+
+        ProgressDialog dialog;
+        Uri uri;
+        Context context;
+        String jsonString = "";
+
+        FileImporter(Context context, Uri uri){
+            this.context = context;
+            this.uri = uri;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            dialog = ProgressDialog.show(MainActivity.this, "",
+                    getString(R.string.loading_please_wait), true);
+        }
+
+
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+
+            try {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(getContentResolver().openInputStream(uri)));
+
+                String content;
+                jsonString = "";
+                while((content = reader.readLine())!=null){
+                    jsonString += content;
+                }
+
+                return true;
+
+            }catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return false;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean success) {
+            dialog.dismiss();
+
+            new JsonToDB(jsonString,"",context).execute();
+        }
+    }
+
+    /**
+     * Reads the json file, and adds data into the database
+     * saves the images in files
+     */
+    private class JsonToDB extends AsyncTask<Void, Void, Boolean>{
+        String importPath;
+        String jsonString;
+        String code;
+        Context context;
+
+        ProgressDialog mProgress;
+
+        public JsonToDB(String jsonString, String code, Context context){
+            importPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/PictureNotes/imports/";
+            this.jsonString = jsonString;
+            this.code = code;
+            this.context = context;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            mProgress = new ProgressDialog(context);
+            mProgress.setMessage(getString(R.string.unzipping_please_wait));
+            mProgress.show();
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try{
+                JSONObject jsonObject = new JSONObject(jsonString);
+
+                if(code.isEmpty())
+                    code = jsonObject.getString("code");
+
+                String dsc = jsonObject.getString("description");
+
+                if(Note.DoesCodeExists(code))
+                    return false;
+
+                Note note = new Note(code, dsc, false);
+                note.saveNoteInDB();
+
+                JSONArray jsonArray = jsonObject.getJSONArray("imageDatas");
+                for(int i=0; i<jsonArray.length(); i++){
+                    JSONObject imageDataJson = jsonArray.getJSONObject(i);
+                    byte[] bytes = Base64.decode(imageDataJson.getString("image"),Base64.DEFAULT);
+                    String imageUrl = importPath+code+"/"+"image"+imageDataJson.getInt("number")+".jpg";
+                    File imageFile = new File(imageUrl);
+
+                    if(!imageFile.getParentFile().exists())
+                        imageFile.getParentFile().mkdirs();
+
+                    FileOutputStream fos = new FileOutputStream(imageFile);
+                    fos.write(bytes);
+                    fos.flush();
+                    fos.close();
+
+                    new ImageData(imageDataJson.getInt("number"), imageUrl, imageDataJson.getString("name"), note).save();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean success) {
+            mProgress.dismiss();
+
+            downloadComplete = true;
+
+            if(success) {
+                Toast.makeText(context, R.string.done_importing, Toast.LENGTH_LONG).show();
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setTitle("Note Imported")
+                        .setMessage("Do you wish to open it?")
+                        .setPositiveButton("Open", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                Intent intent = new Intent(context, ShowImageActivity.class);
+                                intent.putExtra("code", code);
+                                startActivity(intent);
+                            }
+                        }).setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                    }
+                });
+                builder.show();
+
+            }
+            else {
+                Toast.makeText(context, R.string.importing_failed, Toast.LENGTH_LONG).show();
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                final EditText editText = new EditText(context);
+                editText.setHint(R.string.new_code);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                lp.setMargins(100,10,100,10);
+                editText.setLayoutParams(lp);
+                builder.setTitle(getString(R.string.code_space)+code+getString(R.string.space_already_exists))
+                        .setView(editText)
+                        .setPositiveButton(R.string.submit, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                new JsonToDB(jsonString, editText.getText().toString().toLowerCase(), context).execute() ;
+                            }
+                        })
+                        .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        });
+                builder.show();
+            }
+        }
+    }
+
+    public static DaoSession GetDaoSession() {
+        return daoSession;
+    }
+    /**
+      create an alert which asks from where to import
+      If its file, ask for file (intent)
+      If its drive, then start Drive Folder Searcher
+     */
+    private void start_import(){
+        //check if permission is granted
+        permisionAsking(this, Manifest.permission.READ_EXTERNAL_STORAGE,READ_REQUEST_CODE_FOR_IMPORT);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.from_where_you_would_like_to_import)
+                .setItems(new String[]{getString(R.string.local), getString(R.string.from_drive)},
+                        (dialog, which) -> {
+                            switch (which){
+                                case 0:
+                                    askForFile();
+                                    return;
+                                case 1:
+
+                                    //TODO START DRIVE STUFF
+                                    gpm.setExecuteResult(() -> {
+                                        new DriveFolderSearcher(this,gpm.mCredential).execute();
+                                        return null;
+                                    });
+                                    gpm.getResultsFromApi();
+                                    return;
+                            }
+                        });
+
+        builder.show();
+
+
+    }
+
+    /**
+     * Ask for file
+     */
+    private void askForFile(){
+        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+        i.setType("*/*");
+        startActivityForResult(i, FILE_REQUEST_CODE);
+    }
+
+    /**
+     * Search for PictureNotes folder in drive
+     * when found load the data from it and open an alert dialogue with backup list
+     */
+    private class DriveFolderSearcher extends AsyncTask<Void, Void, FileList>{
 
         Context context;
         ProgressDialog mProgress;
         Exception mLastError = null;
         Drive mService = null;
 
-        public driveFolderSearcher(Context context,GoogleAccountCredential credential){
+        public DriveFolderSearcher(Context context, GoogleAccountCredential credential){
             HttpTransport transport = AndroidHttp.newCompatibleTransport();
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
             mService = new com.google.api.services.drive.Drive.Builder(
@@ -983,31 +887,128 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
             }
         }
     }
+    //endregion
 
-
-    //NOTEME DOUBLETAP TO EXIT
-    boolean backPressedOnce=false;
-    @Override
-    public void onBackPressed() {
-        if(backPressedOnce)
-            super.onBackPressed();
-        else{
-            Toast.makeText(c, R.string.press_back_again_to_exit, Toast.LENGTH_SHORT).show();
-            backPressedOnce = true;
-
-            new Thread(){
-                @Override
-                public void run() {
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    backPressedOnce = false;
-                }
-            }.start();
+    //region GPM INTERFACE METHODS
+    @AfterPermissionGranted(REQUEST_PERMISSION_GET_ACCOUNTS)
+    public void chooseAccount() {
+        if (EasyPermissions.hasPermissions(
+                this, Manifest.permission.GET_ACCOUNTS)) {
+            String accountName = getSharedPreferences("prefs",Context.MODE_PRIVATE)
+                    .getString(PREF_ACCOUNT_NAME, null);
+            if (accountName != null) {
+                gpm.mCredential.setSelectedAccountName(accountName);
+                gpm.getResultsFromApi();
+            } else {
+                // Start a dialog from which the user can choose an account
+                startActivityForResult(
+                        gpm.mCredential.newChooseAccountIntent(),
+                        REQUEST_ACCOUNT_PICKER);
+            }
+        } else {
+            // Request the GET_ACCOUNTS permission via a user dialog
+            EasyPermissions.requestPermissions(
+                    this,
+                    getString(R.string.this_app_needs_to_access_your_google_account),
+                    REQUEST_PERMISSION_GET_ACCOUNTS,
+                    Manifest.permission.GET_ACCOUNTS);
         }
     }
+
+    @Override
+    public void onPermissionsGranted(int requestCode, List<String> list) {
+        // Do nothing.
+    }
+
+    @Override
+    public void onPermissionsDenied(int requestCode, List<String> list) {
+        // Do nothing.
+    }
+
+    //endregion
+
+    //region intent handler for importing
+    /**
+     * After file selection Intent ends, start `FileImporter`
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch (requestCode){
+            case FILE_REQUEST_CODE:
+                if(resultCode == RESULT_OK) {
+
+                    Uri uri = data.getData();
+
+                    new FileImporter(this,uri).execute();
+                }
+
+                break;
+        }
+
+        gpm.manageResults(requestCode,resultCode,data);
+    }
+
+
+    /**
+     * If file access is not given before, ask it again and
+     * if the result is ok then start file asking intent
+     */
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+
+        //NOTEME GPM METHOD
+        EasyPermissions.onRequestPermissionsResult(
+                requestCode, permissions, grantResults, this);
+
+        switch (requestCode) {
+            case READ_REQUEST_CODE_FOR_IMPORT: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    askForFile();
+                }
+            }
+            break;
+        }
+    }
+
+    /**
+     * When app is opened using notification,
+     * used to show download status detail
+     */
+    @Override
+    protected void onNewIntent(Intent intent) {
+
+        setIntent(intent);
+
+        if(intent.getBooleanExtra("showDownloadProgress",false)){
+            if(!downloadComplete)
+                mDownloadProgress.show();
+        }else
+            checkForIntent();
+
+        super.onNewIntent(intent);
+
+    }
+    //endregion
+
+    //region permision asking helper functions
+    public static boolean permisionAsking(Activity c, String s){
+        return permisionAsking(c,s,123456);
+    }
+
+    public static boolean permisionAsking(Activity c, String s, int requestCode){
+        if(!(ContextCompat.checkSelfPermission(c, s) == PermissionChecker.PERMISSION_GRANTED))
+            ActivityCompat.requestPermissions(c, new String[]{s}, requestCode);
+
+        return ContextCompat.checkSelfPermission(c, s) == PermissionChecker.PERMISSION_GRANTED;
+    }
+    //endregion
+
+
+
 
 
 
